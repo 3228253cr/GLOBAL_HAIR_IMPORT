@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - ניהול סוכנים</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="toastContainer"></div>
+    
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold">👤 ניהול סוכנים</h1>
+                <a href="maintenance.html" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">← חזרה לתחזוקה</a>
+            </div>
+
+            <!-- טופס הוספת/עריכת סוכן -->
+            <div class="bg-blue-50 p-6 rounded-xl mb-6">
+                <h3 class="text-xl font-bold mb-4">➕ הוסף / ערוך סוכן</h3>
+                <input type="hidden" id="agentId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">שם מלא *</label>
+                        <input type="text" id="agentName" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">שם משתמש *</label>
+                        <input type="text" id="agentUsername" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">סיסמה *</label>
+                        <input type="password" id="agentPassword" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">טלפון</label>
+                        <input type="text" id="agentPhone" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">אימייל</label>
+                        <input type="email" id="agentEmail" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">% עמלה</label>
+                        <input type="number" id="agentCommission" step="0.01" value="0" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                    </div>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button onclick="saveAgent()" class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700">💾 שמור</button>
+                    <button onclick="cancelEdit()" class="bg-gray-400 text-white px-6 py-3 rounded-xl hover:bg-gray-500">✖ ביטול</button>
+                </div>
+            </div>
+
+            <!-- טבלת סוכנים -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="px-4 py-3 text-right">שם</th>
+                            <th class="px-4 py-3 text-right">שם משתמש</th>
+                            <th class="px-4 py-3 text-right">טלפון</th>
+                            <th class="px-4 py-3 text-right">אימייל</th>
+                            <th class="px-4 py-3 text-right">% עמלה</th>
+                            <th class="px-4 py-3 text-right">סטטוס</th>
+                            <th class="px-4 py-3 text-center">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agentsTable">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onload = async function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                loadAgents();
+            }
+        };
+
+        async function loadAgents() {
+            const { data, error } = await supabaseClient
+                .from('agents')
+                .select('*')
+                .order('name');
+            
+            const tbody = document.getElementById('agentsTable');
+            
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">אין סוכנים במערכת</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map((a, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="px-4 py-3 font-bold">${a.name}</td>
+                    <td class="px-4 py-3">${a.username}</td>
+                    <td class="px-4 py-3">${a.phone || '-'}</td>
+                    <td class="px-4 py-3">${a.email || '-'}</td>
+                    <td class="px-4 py-3">${a.commission_rate || 0}%</td>
+                    <td class="px-4 py-3">
+                        <span class="px-3 py-1 rounded-full text-sm ${a.active ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">
+                            ${a.active ? 'פעיל' : 'לא פעיל'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="editAgent('${a.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600">✏️ ערוך</button>
+                            <button onclick="toggleActive('${a.id}', ${!a.active})" class="bg-${a.active ? 'red' : 'green'}-500 text-white px-3 py-1 rounded-lg hover:bg-${a.active ? 'red' : 'green'}-600">
+                                ${a.active ? '🔒' : '🔓'}
+                            </button>
+                            <button onclick="deleteAgent('${a.id}')" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function saveAgent() {
+            const id = document.getElementById('agentId').value;
+            const name = document.getElementById('agentName').value.trim();
+            const username = document.getElementById('agentUsername').value.trim();
+            const password = document.getElementById('agentPassword').value;
+            const phone = document.getElementById('agentPhone').value.trim();
+            const email = document.getElementById('agentEmail').value.trim();
+            const commission = parseFloat(document.getElementById('agentCommission').value) || 0;
+            
+            if (!name || !username || (!id && !password)) {
+                showToast('נא למלא שם, שם משתמש וסיסמה', 'error');
+                return;
+            }
+            
+            const data = {
+                name,
+                username,
+                phone,
+                email,
+                commission_rate: commission,
+                active: true
+            };
+            
+            // הוסף סיסמה רק אם מולאה
+            if (password) {
+                data.password = password; // בייצור אמיתי צריך להצפין!
+            }
+            
+            let result;
+            if (id) {
+                result = await supabaseClient.from('agents').update(data).eq('id', id);
+            } else {
+                result = await supabaseClient.from('agents').insert([data]);
+            }
+            
+            if (result.error) {
+                showToast('שגיאה: ' + result.error.message, 'error');
+                return;
+            }
+            
+            showToast(id ? 'סוכן עודכן בהצלחה!' : 'סוכן נוסף בהצלחה!');
+            cancelEdit();
+            loadAgents();
+        }
+
+        async function editAgent(id) {
+            const { data, error } = await supabaseClient
+                .from('agents')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error || !data) {
+                showToast('שגיאה בטעינת הסוכן', 'error');
+                return;
+            }
+            
+            document.getElementById('agentId').value = data.id;
+            document.getElementById('agentName').value = data.name;
+            document.getElementById('agentUsername').value = data.username;
+            document.getElementById('agentPassword').value = ''; // לא מציגים סיסמה
+            document.getElementById('agentPhone').value = data.phone || '';
+            document.getElementById('agentEmail').value = data.email || '';
+            document.getElementById('agentCommission').value = data.commission_rate || 0;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function toggleActive(id, newStatus) {
+            const { error } = await supabaseClient
+                .from('agents')
+                .update({ active: newStatus })
+                .eq('id', id);
+            
+            if (error) {
+                showToast('שגיאה בעדכון סטטוס', 'error');
+                return;
+            }
+            
+            showToast(newStatus ? 'סוכן הופעל!' : 'סוכן הושבת!');
+            loadAgents();
+        }
+
+        async function deleteAgent(id) {
+            if (!confirm('האם למחוק את הסוכן? פעולה זו תמחק גם את כל ההיסטוריה שלו!')) return;
+            
+            const { error } = await supabaseClient
+                .from('agents')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('שגיאה במחיקה: ' + error.message, 'error');
+                return;
+            }
+            
+            showToast('סוכן נמחק בהצלחה');
+            loadAgents();
+        }
+
+        function cancelEdit() {
+            document.getElementById('agentId').value = '';
+            document.getElementById('agentName').value = '';
+            document.getElementById('agentUsername').value = '';
+            document.getElementById('agentPassword').value = '';
+            document.getElementById('agentPhone').value = '';
+            document.getElementById('agentEmail').value = '';
+            document.getElementById('agentCommission').value = 0;
+        }
+    </script>
+</body>
+</html>
