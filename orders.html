@@ -216,31 +216,6 @@
                     </div>
                 </div>
 
-                <!-- תנאי תשלום -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">תנאי תשלום</label>
-                        <select id="payment_terms" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
-                            <option value="מזומן">מזומן</option>
-                            <option value="שוטף+30">שוטף + 30</option>
-                            <option value="שוטף+60">שוטף + 60</option>
-                            <option value="שוטף+90">שוטף + 90</option>
-                            <option value="מקדמה">מקדמה</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">אמצעי תשלום (ברירת מחדל)</label>
-                        <select id="payment_method" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
-                            <option value="מזומן">מזומן</option>
-                            <option value="העברה בנקאית">העברה בנקאית</option>
-                            <option value="צ'ק">צ'ק</option>
-                            <option value="אשראי">כרטיס אשראי</option>
-                            <option value="ביט">ביט</option>
-                            <option value="פייבוקס">פייבוקס</option>
-                        </select>
-                    </div>
-                </div>
-
                 <!-- שורות תשלום -->
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-4">
@@ -782,7 +757,7 @@
             document.getElementById('orderId').value = ''; 
             document.getElementById('orderForm').reset(); 
             document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('orderDiscount').value = 0;
+            document.getElementById('orderDiscount').value = '';
             document.getElementById('includeVat').checked = false;
             document.getElementById('orderItemsBody').innerHTML = '';
             document.getElementById('paymentRowsBody').innerHTML = '';
@@ -823,9 +798,7 @@
             document.getElementById('order_number').value = o.order_number || '';
             document.getElementById('customer_id').value = o.customer_id || ''; 
             document.getElementById('order_date').value = o.order_date || ''; 
-            document.getElementById('payment_terms').value = o.payment_terms || 'שוטף+30';
-            document.getElementById('payment_method').value = o.payment_method || 'העברה בנקאית';
-            document.getElementById('orderDiscount').value = o.discount || 0;
+            document.getElementById('orderDiscount').value = o.discount || '';
             document.getElementById('includeVat').checked = o.include_vat || false;
             document.getElementById('notes').value = o.notes || ''; 
             
@@ -874,8 +847,6 @@
                 customer_id: customerId, 
                 order_date: document.getElementById('order_date').value || null, 
                 status: 'פתוח', 
-                payment_terms: document.getElementById('payment_terms').value,
-                payment_method: document.getElementById('payment_method').value,
                 discount: discount,
                 include_vat: includeVat,
                 vat_amount: vatAmount,
