@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - דוח לקוחות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        .toast.info { background: #3B82F6; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+            .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <div id="toastContainer"></div>
+
+    <!-- סרגל צד קבוע -->
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item">
+                <span>📊</span>
+                <span>דשבורד</span>
+            </a>
+            <a href="suppliers.html" class="nav-item">
+                <span>🏭</span>
+                <span>ספקים</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <span>📦</span>
+                <span>מוצרים</span>
+            </a>
+            <a href="customers.html" class="nav-item">
+                <span>👥</span>
+                <span>לקוחות</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <span>📋</span>
+                <span>הזמנות</span>
+            </a>
+            <a href="invoices.html" class="nav-item">
+                <span>🧾</span>
+                <span>חשבוניות</span>
+            </a>
+            <a href="customer-report.html" class="nav-item active">
+                <span>📈</span>
+                <span>דוח לקוחות</span>
+            </a>
+            <a href="maintenance.html" class="nav-item">
+                <span>⚙️</span>
+                <span>תחזוקה</span>
+            </a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span>
+                <span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content">
+        <main class="p-8">
+
+        
+        <!-- שער דולר -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex justify-between items-center no-print">
+            <div class="flex items-center gap-4">
+                <span class="text-blue-800 font-medium">שער דולר:</span>
+                <input type="number" id="usdRateInput" step="0.0001" value="3.22" onchange="updateExchangeRate()" class="w-24 border-2 border-blue-300 rounded-lg px-3 py-2 text-center font-bold text-blue-900 focus:border-blue-500 focus:outline-none">
+                <span class="text-blue-600 text-sm">₪ לדולר</span>
+            </div>
+            <button onclick="loadCustomerReport()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                🔄 עדכן דוח
+            </button>
+        </div>
+
+        <!-- כותרת ובחירת לקוח -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 no-print">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">דוח לקוחות</h2>
+                <p class="text-gray-500">הזמנות, תשלומים ויתרות</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <select id="customerFilter" onchange="loadCustomerReport()" class="border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none min-w-[250px]">
+                    <option value="">כל הלקוחות</option>
+                </select>
+                <button onclick="printReport()" class="bg-purple-500 text-white px-6 py-3 rounded-xl hover:bg-purple-600 transition">
+                    🖨️ הדפס דוח
+                </button>
+            </div>
+        </div>
+
+        <!-- סיכום כללי -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 no-print">
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <p class="text-gray-500 text-sm">סה"כ הזמנות</p>
+                <p id="totalOrders" class="text-3xl font-bold text-gray-800">0</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <p class="text-gray-500 text-sm">סה"כ לגבייה</p>
+                <p id="totalAmount" class="text-3xl font-bold text-blue-600">$0</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <p class="text-gray-500 text-sm">סה"כ שולם</p>
+                <p id="totalPaid" class="text-3xl font-bold text-green-600">$0</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <p class="text-gray-500 text-sm">יתרה לגבייה</p>
+                <p id="totalBalance" class="text-3xl font-bold text-red-600">$0</p>
+            </div>
+        </div>
+
+        <!-- טבלת הדוח -->
+        <div id="reportContainer" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+            <table id="reportTable" class="w-full hidden">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-4 py-4 text-right">לקוח</th>
+                        <th class="px-4 py-4 text-right">מס' הזמנה</th>
+                        <th class="px-4 py-4 text-right">תאריך</th>
+                        <th class="px-4 py-4 text-right">סכום הזמנה</th>
+                        <th class="px-4 py-4 text-right">שולם</th>
+                        <th class="px-4 py-4 text-right">יתרה</th>
+                        <th class="px-4 py-4 text-right">סטטוס</th>
+                        <th class="px-4 py-4 text-center no-print">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+
+        <!-- מודל הוספת תשלום -->
+        <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+                <h3 class="text-2xl font-bold mb-6">הוספת תשלום</h3>
+                <form id="paymentForm" onsubmit="savePayment(event)">
+                    <input type="hidden" id="paymentOrderId">
+                    <input type="hidden" id="paymentCustomerId">
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">הזמנה</label>
+                        <input type="text" id="paymentOrderNumber" readonly class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-100">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">סכום</label>
+                            <input type="number" id="paymentAmount" step="0.01" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">מטבע</label>
+                            <select id="paymentCurrency" onchange="updateAmountILS()" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                                <option value="ILS">₪ שקלים</option>
+                                <option value="USD">$ דולרים</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="exchangeRateSection" class="mb-4 hidden">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">שער המרה</label>
+                                <input type="number" id="paymentExchangeRate" step="0.0001" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">סכום בשקלים</label>
+                                <input type="number" id="paymentAmountILS" step="0.01" readonly class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-100 font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">תאריך תשלום</label>
+                            <input type="date" id="paymentDate" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">אמצעי תשלום</label>
+                            <select id="paymentMethod" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                                <option value="מזומן">מזומן</option>
+                                <option value="העברה בנקאית">העברה בנקאית</option>
+                                <option value="צ'ק">צ'ק</option>
+                                <option value="אשראי">כרטיס אשראי</option>
+                                <option value="ביט">ביט</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">הערות / אסמכתא</label>
+                        <input type="text" id="paymentReference" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none" placeholder="מספר צ'ק, אסמכתא...">
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="submit" id="savePaymentBtn" class="flex-1 bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">
+                            שמור תשלום
+                        </button>
+                        <button type="button" onclick="closePaymentModal()" class="flex-1 bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">
+                            ביטול
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- מודל היסטוריית תשלומים -->
+        <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">היסטוריית תשלומים</h3>
+                    <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                <div id="historyOrderInfo" class="bg-gray-50 p-4 rounded-xl mb-4"></div>
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-right">תאריך</th>
+                            <th class="px-4 py-3 text-right">סכום</th>
+                            <th class="px-4 py-3 text-right">מטבע</th>
+                            <th class="px-4 py-3 text-right">שער</th>
+                            <th class="px-4 py-3 text-right">בשקלים</th>
+                            <th class="px-4 py-3 text-right">אמצעי</th>
+                            <th class="px-4 py-3 text-center">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- אזור הדפסה -->
+        <div id="printArea" class="hidden">
+            <div style="padding: 40px; font-family: 'Heebo', sans-serif; direction: rtl;">
+                <p style="color: #666; margin: 5px 0; text-align: left;" id="printDate"></p>
+                <div id="printContent"></div>
+            </div>
+        </div>
+
+                        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let customers = [];
+        let orders = [];
+        let currentUsdRate = 3.22;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onload = async function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+            
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                await loadCustomers();
+                await loadCustomerReport();
+                fetchExchangeRate();
+            }
+        };
+
+        function updateExchangeRate() {
+            currentUsdRate = parseFloat(document.getElementById('usdRateInput').value) || 3.22;
+            document.getElementById('paymentExchangeRate').value = currentUsdRate;
+        }
+
+        function fetchExchangeRate() {
+            currentUsdRate = parseFloat(document.getElementById('usdRateInput').value) || 3.22;
+            document.getElementById('paymentExchangeRate').value = currentUsdRate;
+        }
+
+        async function loadCustomers() {
+            const { data } = await supabaseClient.from('customers').select('*').order('company_name');
+            customers = data || [];
+            document.getElementById('customerFilter').innerHTML = '<option value="">כל הלקוחות</option>' + 
+                customers.map(c => `<option value="${c.id}">${c.company_name}</option>`).join('');
+        }
+
+        async function loadCustomerReport() {
+            try {
+                document.getElementById('loading').classList.remove('hidden');
+                document.getElementById('loading').textContent = 'טוען נתונים...';
+                document.getElementById('reportTable').classList.add('hidden');
+                
+                const customerId = document.getElementById('customerFilter').value;
+                
+                let query = supabaseClient.from('orders').select('*, customers(company_name, contact_name)').order('order_date', { ascending: false });
+                
+                if (customerId) {
+                    query = query.eq('customer_id', customerId);
+                }
+                
+                const { data, error } = await query;
+                if (error) { 
+                    document.getElementById('loading').textContent = 'שגיאה: ' + error.message; 
+                    return; 
+                }
+                
+                // שליפת כל התשלומים
+                const { data: allPayments } = await supabaseClient.from('payments').select('*');
+                
+                // חישוב סה"כ שולם לכל הזמנה
+                orders = (data || []).map(order => {
+                    const orderPayments = (allPayments || []).filter(p => p.order_id === order.id);
+                    let totalPaidILS = 0;
+                    orderPayments.forEach(p => {
+                        if (p.currency === 'USD') {
+                            totalPaidILS += (parseFloat(p.amount) || 0) * (parseFloat(p.exchange_rate) || currentUsdRate);
+                        } else {
+                            totalPaidILS += parseFloat(p.amount) || 0;
+                        }
+                    });
+                    return { ...order, calculated_paid: totalPaidILS };
+                });
+                
+                renderReport();
+            } catch (err) {
+                console.error('שגיאה בטעינת דוח:', err);
+                document.getElementById('loading').textContent = 'שגיאה בטעינת נתונים';
+            }
+        }
+
+        function getPaymentStatusBadge(status) {
+            const colors = {
+                'לא שולם': 'bg-red-100 text-red-800',
+                'שולם חלקית': 'bg-yellow-100 text-yellow-800',
+                'שולם במלואו': 'bg-green-100 text-green-800'
+            };
+            return `<span class="px-3 py-1 rounded-full text-sm font-medium ${colors[status] || 'bg-gray-100'}">${status || 'לא שולם'}</span>`;
+        }
+
+        function renderReport() {
+            document.getElementById('loading').classList.add('hidden');
+            
+            if (orders.length === 0) {
+                document.getElementById('reportBody').innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-500">אין הזמנות להצגה</td></tr>';
+                document.getElementById('reportTable').classList.remove('hidden');
+                return;
+            }
+
+            // חישוב סיכומים
+            let totalOrders = orders.length;
+            let totalAmount = 0;
+            let totalPaid = 0;
+
+            orders.forEach(o => {
+                totalAmount += parseFloat(o.total_amount) || 0;
+                totalPaid += (parseFloat(o.calculated_paid) || 0) / currentUsdRate;
+            });
+
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalAmount').textContent = `$${totalAmount.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('totalPaid').textContent = `$${totalPaid.toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+            document.getElementById('totalBalance').textContent = `$${(totalAmount - totalPaid).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+
+            document.getElementById('reportTable').classList.remove('hidden');
+            document.getElementById('reportBody').innerHTML = orders.map((o, i) => {
+                const orderAmountUSD = parseFloat(o.total_amount) || 0;
+                const paidAmountILS = parseFloat(o.calculated_paid) || 0;
+                const paidAmountUSD = paidAmountILS / currentUsdRate;
+                const balanceUSD = orderAmountUSD - paidAmountUSD;
+                
+                // חישוב סטטוס תשלום לפי הלוגיקה הנכונה
+                let paymentStatus = 'לא שולם';
+                if (balanceUSD <= 0.01) {
+                    paymentStatus = 'שולם במלואו';
+                } else if (balanceUSD < orderAmountUSD - 0.01) {
+                    paymentStatus = 'שולם חלקית';
+                }
+                
+                return `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="px-4 py-4 font-semibold">${o.customers?.company_name || ''}</td>
+                    <td class="px-4 py-4">${o.order_number || '-'}</td>
+                    <td class="px-4 py-4">${o.order_date || ''}</td>
+                    <td class="px-4 py-4">$${orderAmountUSD.toLocaleString()}</td>
+                    <td class="px-4 py-4 text-green-600 font-medium">$${paidAmountUSD.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                    <td class="px-4 py-4 ${balanceUSD > 0.01 ? 'text-red-600 font-bold' : 'text-green-600'}">$${balanceUSD.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                    <td class="px-4 py-4">${getPaymentStatusBadge(paymentStatus)}</td>
+                    <td class="px-4 py-4 no-print">
+                        <div class="flex gap-1 justify-center">
+                            <button onclick="openPaymentModal('${o.id}', '${o.customer_id}', '${o.order_number || ''}')" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">+ תשלום</button>
+                            <button onclick="showPaymentHistory('${o.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">היסטוריה</button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        // מודל תשלום
+        function openPaymentModal(orderId, customerId, orderNumber) {
+            document.getElementById('paymentOrderId').value = orderId;
+            document.getElementById('paymentCustomerId').value = customerId;
+            document.getElementById('paymentOrderNumber').value = orderNumber || orderId.substring(0, 8);
+            document.getElementById('paymentAmount').value = '';
+            document.getElementById('paymentCurrency').value = 'ILS';
+            document.getElementById('paymentExchangeRate').value = currentUsdRate;
+            document.getElementById('paymentAmountILS').value = '';
+            document.getElementById('paymentReference').value = '';
+            document.getElementById('exchangeRateSection').classList.add('hidden');
+            document.getElementById('paymentModal').classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+
+        function updateAmountILS() {
+            const currency = document.getElementById('paymentCurrency').value;
+            const exchangeSection = document.getElementById('exchangeRateSection');
+            
+            if (currency === 'USD') {
+                exchangeSection.classList.remove('hidden');
+                calculateAmountILS();
+            } else {
+                exchangeSection.classList.add('hidden');
+            }
+        }
+
+        function calculateAmountILS() {
+            const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+            const rate = parseFloat(document.getElementById('paymentExchangeRate').value) || currentUsdRate;
+            const amountILS = amount * rate;
+            document.getElementById('paymentAmountILS').value = amountILS.toFixed(2);
+        }
+
+        // האזנה לשינויים בסכום
+        document.getElementById('paymentAmount')?.addEventListener('input', calculateAmountILS);
+        document.getElementById('paymentExchangeRate')?.addEventListener('input', calculateAmountILS);
+
+        async function savePayment(event) {
+            event.preventDefault();
+            const btn = document.getElementById('savePaymentBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'שומר... <span class="spinner"></span>';
+
+            const currency = document.getElementById('paymentCurrency').value;
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const rate = currency === 'USD' ? parseFloat(document.getElementById('paymentExchangeRate').value) : 1;
+            const amountILS = currency === 'USD' ? amount * rate : amount;
+
+            const paymentData = {
+                order_id: document.getElementById('paymentOrderId').value,
+                customer_id: document.getElementById('paymentCustomerId').value,
+                payment_date: document.getElementById('paymentDate').value,
+                amount: amount,
+                currency: currency,
+                exchange_rate: rate,
+                amount_ils: amountILS,
+                payment_method: document.getElementById('paymentMethod').value,
+                reference_number: document.getElementById('paymentReference').value
+            };
+
+            try {
+                const { error } = await supabaseClient.from('payments').insert([paymentData]);
+                if (error) throw error;
+                
+                showToast('התשלום נקלט בהצלחה!');
+                closePaymentModal();
+                loadCustomerReport();
+            } catch (error) {
+                showToast('שגיאה: ' + error.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = 'שמור תשלום';
+        }
+
+        // היסטוריית תשלומים
+        async function showPaymentHistory(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            const { data: payments } = await supabaseClient
+                .from('payments')
+                .select('*')
+                .eq('order_id', orderId)
+                .order('payment_date', { ascending: false });
+
+            document.getElementById('historyOrderInfo').innerHTML = `
+                <strong>הזמנה:</strong> ${order?.order_number || orderId.substring(0,8)} | 
+                <strong>לקוח:</strong> ${order?.customers?.company_name || ''} |
+                <strong>סכום הזמנה:</strong> ₪${(order?.total_amount || 0).toLocaleString()}
+            `;
+
+            if (!payments || payments.length === 0) {
+                document.getElementById('historyBody').innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">אין תשלומים להצגה</td></tr>';
+            } else {
+                document.getElementById('historyBody').innerHTML = payments.map(p => `
+                    <tr class="border-b">
+                        <td class="px-4 py-3">${p.payment_date}</td>
+                        <td class="px-4 py-3">${p.currency === 'USD' ? '$' : '₪'}${p.amount.toLocaleString()}</td>
+                        <td class="px-4 py-3">${p.currency}</td>
+                        <td class="px-4 py-3">${p.exchange_rate}</td>
+                        <td class="px-4 py-3 font-bold">₪${p.amount_ils.toLocaleString()}</td>
+                        <td class="px-4 py-3">${p.payment_method || ''}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="deletePayment('${p.id}')" class="text-red-500 hover:text-red-700">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
+        async function deletePayment(paymentId) {
+            if (!confirm('למחוק את התשלום?')) return;
+            await supabaseClient.from('payments').delete().eq('id', paymentId);
+            showToast('התשלום נמחק');
+            closeHistoryModal();
+            loadCustomerReport();
+        }
+
+        // הדפסת דוח
+        async function printReport() {
+            document.getElementById('printDate').textContent = `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}`;
+            
+            // שליפת כל התשלומים
+            const { data: allPayments } = await supabaseClient.from('payments').select('*').order('payment_date', { ascending: true });
+            
+            // בדיקה אם נבחר לקוח ספציפי
+            const customerId = document.getElementById('customerFilter').value;
+            const selectedCustomer = customers.find(c => c.id === customerId);
+            const customerTitle = selectedCustomer ? `דוח יתרות - ${selectedCustomer.company_name}` : 'דוח יתרות לקוחות';
+            
+            let totalOrdersSum = 0;
+            let totalPaidSum = 0;
+            
+            let html = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <img src="logo.jpeg" style="width: 80px; height: 80px; object-fit: contain; margin: 0 auto 15px;">
+                    <h2 style="margin: 0; font-size: 24px;">${customerTitle}</h2>
+                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #1a1a2e; color: white;">
+                            ${!selectedCustomer ? '<th style="padding: 12px; text-align: right; border: 1px solid #ddd;">לקוח</th>' : ''}
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">מס' הזמנה</th>
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">תאריך</th>
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">סכום</th>
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">שולם</th>
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">יתרה</th>
+                            <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">סטטוס</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            orders.forEach((o, i) => {
+                const orderAmountUSD = parseFloat(o.total_amount) || 0;
+                const paidAmountILS = parseFloat(o.calculated_paid) || 0;
+                const paidAmountUSD = paidAmountILS / currentUsdRate;
+                const balanceUSD = orderAmountUSD - paidAmountUSD;
+                
+                totalOrdersSum += orderAmountUSD;
+                totalPaidSum += paidAmountUSD;
+                
+                // חישוב סטטוס נכון
+                let paymentStatus = 'לא שולם';
+                if (balanceUSD <= 0.01) {
+                    paymentStatus = 'שולם במלואו';
+                } else if (balanceUSD < orderAmountUSD - 0.01) {
+                    paymentStatus = 'שולם חלקית';
+                }
+                
+                // שורת ההזמנה
+                html += `
+                    <tr style="background: ${i % 2 === 0 ? '#fff' : '#f8f9fa'};">
+                        ${!selectedCustomer ? `<td style="padding: 12px; border: 1px solid #ddd;">${o.customers?.company_name || ''}</td>` : ''}
+                        <td style="padding: 12px; border: 1px solid #ddd;">${o.order_number || '-'}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">${o.order_date || ''}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">$${orderAmountUSD.toLocaleString()}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; color: green;">$${paidAmountUSD.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; color: ${balanceUSD > 0.01 ? 'red' : 'green'}; font-weight: bold;">$${balanceUSD.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">${paymentStatus}</td>
+                    </tr>
+                `;
+                
+                // פירוט תשלומים אם יש יותר מתשלום אחד
+                const orderPayments = (allPayments || []).filter(p => p.order_id === o.id);
+                if (orderPayments.length > 1) {
+                    const colSpan = !selectedCustomer ? 7 : 6;
+                    html += `
+                        <tr style="background: #f0f9ff;">
+                            <td colspan="${colSpan}" style="padding: 8px 12px 12px 40px; border: 1px solid #ddd;">
+                                <div style="font-size: 12px; color: #666;">
+                                    <strong>פירוט תשלומים:</strong>
+                                    <table style="width: 100%; margin-top: 5px; border-collapse: collapse;">
+                                        <tr style="background: #e0e0e0;">
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">תאריך</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">סכום</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">מטבע</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">שער</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">סה"כ ב-$</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">אמצעי</th>
+                                            <th style="padding: 5px; text-align: right; font-size: 11px;">אסמכתא</th>
+                                        </tr>
+                                        ${orderPayments.map(p => {
+                                            const amountUSD = p.currency === 'USD' ? p.amount : p.amount / (p.exchange_rate || currentUsdRate);
+                                            return `
+                                            <tr>
+                                                <td style="padding: 4px; font-size: 11px;">${p.payment_date || ''}</td>
+                                                <td style="padding: 4px; font-size: 11px;">${p.currency === 'USD' ? '$' : '₪'}${(p.amount || 0).toLocaleString()}</td>
+                                                <td style="padding: 4px; font-size: 11px;">${p.currency || 'ILS'}</td>
+                                                <td style="padding: 4px; font-size: 11px;">${p.exchange_rate || '-'}</td>
+                                                <td style="padding: 4px; font-size: 11px; font-weight: bold;">$${amountUSD.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                                                <td style="padding: 4px; font-size: 11px;">${p.payment_method || ''}</td>
+                                                <td style="padding: 4px; font-size: 11px;">${p.reference_number || ''}</td>
+                                            </tr>
+                                        `}).join('')}
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            const totalBalanceSum = totalOrdersSum - totalPaidSum;
+            
+            html += `
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #d4af37; color: white; font-weight: bold;">
+                            <td colspan="${!selectedCustomer ? '3' : '2'}" style="padding: 12px; border: 1px solid #ddd; text-align: right;">סה"כ:</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">$${totalOrdersSum.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">$${totalPaidSum.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd; font-size: 18px;">$${totalBalanceSum.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+            document.getElementById('printContent').innerHTML = html;
+            document.getElementById('printArea').classList.remove('hidden');
+            window.print();
+            document.getElementById('printArea').classList.add('hidden');
+        }
+
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

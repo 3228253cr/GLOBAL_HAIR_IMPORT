@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - ניהול הזמנות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 16px 32px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+        }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff40;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+            .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- סרגל צד קבוע -->
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item">
+                <span>📊</span>
+                <span>דשבורד</span>
+            </a>
+            <a href="suppliers.html" class="nav-item">
+                <span>🏭</span>
+                <span>ספקים</span>
+            </a>
+            <a href="trips.html" class="nav-item">
+                <span>✈️</span>
+                <span>נסיעות</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <span>📦</span>
+                <span>מוצרים</span>
+            </a>
+            <a href="customers.html" class="nav-item">
+                <span>👥</span>
+                <span>לקוחות</span>
+            </a>
+            <a href="orders.html" class="nav-item active">
+                <span>📋</span>
+                <span>הזמנות</span>
+            </a>
+            <a href="invoices.html" class="nav-item">
+                <span>🧾</span>
+                <span>חשבוניות</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <span>📈</span>
+                <span>דוחות</span>
+            </a>
+            <a href="maintenance.html" class="nav-item">
+                <span>⚙️</span>
+                <span>תחזוקה</span>
+            </a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span>
+                <span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content">
+        <main class="p-8">
+
+        <div class="flex justify-between items-center mb-8 no-print">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">ניהול הזמנות</h2>
+                <p class="text-gray-500">ניהול כל ההזמנות במערכת</p>
+            </div>
+            <button onclick="showAddForm()" class="gold-gradient text-white px-6 py-3 rounded-xl hover:opacity-90 transition shadow-lg">+ הזמנה חדשה</button>
+        </div>
+
+        <!-- טופס הזמנה -->
+        <div id="formContainer" class="bg-white rounded-2xl shadow-lg p-6 mb-8 hidden no-print">
+            <h3 id="formTitle" class="text-2xl font-bold mb-6">הזמנה חדשה</h3>
+            <form id="orderForm" onsubmit="saveOrder(event)">
+                <input type="hidden" id="orderId">
+                
+                <!-- פרטי הזמנה בסיסיים -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">מספר הזמנה</label>
+                        <input type="text" id="order_number" readonly class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-100 font-bold text-blue-600" placeholder="יוקצה אוטומטית">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">לקוח *</label>
+                        <select id="customer_id" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                            <option value="">בחר לקוח...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">תאריך הזמנה</label>
+                        <input type="date" id="order_date" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- פריטי הזמנה -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xl font-bold text-gray-700">פריטי הזמנה</h4>
+                        <button type="button" onclick="addOrderItem()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">+ הוסף פריט</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-xl">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-right">#</th>
+                                    <th class="px-4 py-3 text-right">סוג מוצר</th>
+                                    <th class="px-4 py-3 text-right">כמות</th>
+                                    <th class="px-4 py-3 text-right">מחיר ליחידה</th>
+                                    <th class="px-4 py-3 text-right">סה"כ שורה</th>
+                                    <th class="px-4 py-3 text-center">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderItemsBody">
+                                <!-- שורות פריטים יתווספו כאן -->
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-left font-bold">סה"כ לפני הנחה:</td>
+                                    <td id="subtotalDisplay" class="px-4 py-3 font-bold">$0.00</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-left font-bold">הנחה ($):</td>
+                                    <td class="px-4 py-3">
+                                        <input type="number" id="orderDiscount" step="0.01" value="0" oninput="calculateOrderTotal()" class="w-28 border rounded-lg px-3 py-2">
+                                    </td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr class="bg-blue-50">
+                                    <td colspan="3" class="px-4 py-3 text-left font-bold">סה"כ הזמנה:</td>
+                                    <td id="orderTotalDisplay" class="px-4 py-3 font-bold text-blue-600">$0.00</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                                <tr class="bg-yellow-50">
+                                    <td colspan="2" class="px-4 py-3">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" id="includeVat" onchange="calculateOrderTotal()" class="w-5 h-5 rounded">
+                                            <span class="font-medium">כולל מע"מ 18%</span>
+                                        </label>
+                                    </td>
+                                    <td class="px-4 py-3 text-left font-bold">סה"כ לתשלום:</td>
+                                    <td id="totalDisplay" class="px-4 py-3 font-bold text-lg text-green-600">$0.00</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- תנאי תשלום -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">תנאי תשלום</label>
+                        <select id="payment_terms" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                            <option value="מזומן">מזומן</option>
+                            <option value="שוטף+30">שוטף + 30</option>
+                            <option value="שוטף+60">שוטף + 60</option>
+                            <option value="שוטף+90">שוטף + 90</option>
+                            <option value="מקדמה">מקדמה</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">אמצעי תשלום (ברירת מחדל)</label>
+                        <select id="payment_method" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                            <option value="מזומן">מזומן</option>
+                            <option value="העברה בנקאית">העברה בנקאית</option>
+                            <option value="צ'ק">צ'ק</option>
+                            <option value="אשראי">כרטיס אשראי</option>
+                            <option value="ביט">ביט</option>
+                            <option value="פייבוקס">פייבוקס</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- שורות תשלום -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xl font-bold text-gray-700">💳 שורות תשלום</h4>
+                        <button type="button" onclick="addPaymentRow()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">+ הוסף תשלום</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-xl">
+                            <thead class="bg-purple-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-right">#</th>
+                                    <th class="px-4 py-3 text-right">תאריך</th>
+                                    <th class="px-4 py-3 text-right">סכום</th>
+                                    <th class="px-4 py-3 text-right">מטבע</th>
+                                    <th class="px-4 py-3 text-right">שער המרה</th>
+                                    <th class="px-4 py-3 text-right">סכום בש"ח</th>
+                                    <th class="px-4 py-3 text-right">אמצעי תשלום</th>
+                                    <th class="px-4 py-3 text-right">אסמכתא</th>
+                                    <th class="px-4 py-3 text-center">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentRowsBody">
+                                <!-- שורות תשלום יתווספו כאן -->
+                            </tbody>
+                            <tfoot class="bg-purple-50">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-left font-bold">סה"כ שולם:</td>
+                                    <td id="totalPaidDisplay" class="px-4 py-3 font-bold text-green-600">₪0.00</td>
+                                    <td class="px-4 py-3 text-left font-bold">יתרה לתשלום:</td>
+                                    <td id="balanceDisplay" class="px-4 py-3 font-bold text-red-600">₪0.00</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                                <tr class="bg-yellow-50">
+                                    <td colspan="3"></td>
+                                    <td class="px-4 py-3 text-left font-bold">סה"כ לתשלום:</td>
+                                    <td id="totalToPayDisplay" class="px-4 py-3 font-bold text-purple-600 text-lg">₪0.00</td>
+                                    <td colspan="4"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- הערות -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">הערות</label>
+                    <textarea id="notes" rows="2" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- סיכום וכפתורים -->
+                <div class="flex flex-wrap gap-4 items-center justify-between">
+                    <div class="text-2xl font-bold">
+                        סה"כ: <span id="totalDisplay">$0.00</span>
+                    </div>
+                    <div class="flex gap-4">
+                        <button type="submit" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">שמור</button>
+                        <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- טבלת הזמנות -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden no-print">
+            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+            <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין הזמנות במערכת</div>
+            <table id="ordersTable" class="w-full hidden">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-4 py-4 text-right">מספר</th>
+                        <th class="px-4 py-4 text-right">לקוח</th>
+                        <th class="px-4 py-4 text-right">תאריך</th>
+                        <th class="px-4 py-4 text-right">סכום</th>
+                        <th class="px-4 py-4 text-right">סטטוס</th>
+                        <th class="px-4 py-4 text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- אזור הדפסה -->
+        <div id="printArea" class="hidden"></div>
+
+                        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let orders = [];
+        let customers = [];
+        let products = [];
+        let orderItems = [];
+        let itemCounter = 0;
+
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Loading state for button
+        function setLoading(btn, loading) {
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = 'שומר... <span class="spinner"></span>';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = 'שמור';
+            }
+        }
+
+        window.onload = function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                loadCustomers();
+                loadProducts();
+                loadOrders();
+            }
+        };
+
+        async function loadCustomers() {
+            const { data } = await supabaseClient.from('customers').select('*').order('company_name');
+            customers = data || [];
+            document.getElementById('customer_id').innerHTML = '<option value="">בחר לקוח...</option>' + customers.map(c => `<option value="${c.id}">${c.company_name}</option>`).join('');
+        }
+
+        async function loadProducts() {
+            const { data } = await supabaseClient.from('products').select('*, suppliers(name)').order('product_type');
+            products = data || [];
+        }
+
+        async function loadOrders() {
+            document.getElementById('loading').classList.remove('hidden');
+            const { data, error } = await supabaseClient.from('orders').select('*, customers(company_name)').order('created_at', { ascending: false });
+            if (error) { document.getElementById('loading').textContent = 'שגיאה: ' + error.message; return; }
+            orders = data || [];
+            renderTable();
+        }
+
+        function getStatusBadge(status) {
+            const colors = { 
+                'טיוטה': 'bg-gray-100 text-gray-800',
+                'פתוח': 'bg-blue-100 text-blue-800', 
+                'בתהליך': 'bg-yellow-100 text-yellow-800', 
+                'נשלח': 'bg-purple-100 text-purple-800',
+                'הושלם': 'bg-green-100 text-green-800', 
+                'בוטל': 'bg-red-100 text-red-800' 
+            };
+            return `<span class="px-3 py-1 rounded-full text-sm font-medium ${colors[status] || 'bg-gray-100'}">${status}</span>`;
+        }
+
+        function renderTable() {
+            document.getElementById('loading').classList.add('hidden');
+            if (orders.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
+            document.getElementById('ordersTable').classList.remove('hidden');
+            document.getElementById('tableBody').innerHTML = orders.map((o, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="px-4 py-4 font-semibold">${o.order_number || '-'}</td>
+                    <td class="px-4 py-4">${o.customers?.company_name || ''}</td>
+                    <td class="px-4 py-4">${o.order_date || ''}</td>
+                    <td class="px-4 py-4 font-bold">$${o.total_amount || 0}</td>
+                    <td class="px-4 py-4">${getStatusBadge(o.status)}</td>
+                    <td class="px-4 py-4">
+                        <div class="flex gap-1 justify-center flex-wrap">
+                            <button onclick="editOrder('${o.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">עריכה</button>
+                            <button onclick="printDeliveryNote('${o.id}')" class="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600">ת.משלוח</button>
+                            <button onclick="createInvoice('${o.id}')" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">חשבונית</button>
+                            <button onclick="deleteOrder('${o.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">מחיקה</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ניהול פריטי הזמנה
+        function addOrderItem(item = null) {
+            itemCounter++;
+            const tbody = document.getElementById('orderItemsBody');
+            const row = document.createElement('tr');
+            row.id = `item-row-${itemCounter}`;
+            row.innerHTML = `
+                <td class="px-4 py-2">${itemCounter}</td>
+                <td class="px-4 py-2">
+                    <select id="product-${itemCounter}" class="w-full border rounded-lg px-2 py-2">
+                        <option value="שיער" selected>שיער</option>
+                        <option value="קצר">קצר</option>
+                        <option value="ארוך">ארוך</option>
+                        <option value="קצר וארוך">קצר וארוך</option>
+                        <option value="בלונדיני">בלונדיני</option>
+                        <option value="מיוחד">מיוחד</option>
+                    </select>
+                </td>
+                <td class="px-4 py-2">
+                    <input type="number" id="qty-${itemCounter}" value="${item?.quantity || ''}" min="1" onchange="calculateRowTotal(${itemCounter})" class="w-20 border rounded-lg px-2 py-2 text-center" placeholder="">
+                </td>
+                <td class="px-4 py-2">
+                    <input type="number" id="price-${itemCounter}" value="${item?.unit_price || ''}" step="0.01" onchange="calculateRowTotal(${itemCounter})" class="w-24 border rounded-lg px-2 py-2 text-center" placeholder="">
+                </td>
+                <td class="px-4 py-2">
+                    <span id="rowtotal-${itemCounter}" class="font-bold">$0.00</span>
+                </td>
+                <td class="px-4 py-2 text-center">
+                    <button type="button" onclick="removeOrderItem(${itemCounter})" class="text-red-500 hover:text-red-700 font-bold text-xl">✕</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            if (item) {
+                document.getElementById(`product-${itemCounter}`).value = item.product_type || item.product_id || 'שיער';
+                document.getElementById(`qty-${itemCounter}`).value = item.quantity;
+                document.getElementById(`price-${itemCounter}`).value = item.unit_price;
+            }
+            
+            calculateRowTotal(itemCounter);
+        }
+
+        function updateItemPrice(rowId) {
+            const select = document.getElementById(`product-${rowId}`);
+            const selectedOption = select.options[select.selectedIndex];
+            const price = selectedOption.dataset.price || 0;
+            document.getElementById(`price-${rowId}`).value = price;
+            calculateRowTotal(rowId);
+        }
+
+        function calculateRowTotal(rowId) {
+            const qty = parseFloat(document.getElementById(`qty-${rowId}`).value) || 0;
+            const price = parseFloat(document.getElementById(`price-${rowId}`).value) || 0;
+            const total = qty * price;
+            document.getElementById(`rowtotal-${rowId}`).textContent = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            calculateOrderTotal();
+        }
+
+        function removeOrderItem(rowId) {
+            document.getElementById(`item-row-${rowId}`)?.remove();
+            calculateOrderTotal();
+        }
+
+        function calculateOrderTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('[id^="rowtotal-"]').forEach(el => {
+                subtotal += parseFloat(el.textContent.replace('$', '').replace(/,/g, '')) || 0;
+            });
+            const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
+            const orderTotal = subtotal - discount;
+            
+            // האם מסומן מע"מ
+            const includeVat = document.getElementById('includeVat')?.checked || false;
+            const totalToPay = includeVat ? orderTotal * 1.18 : orderTotal;
+            
+            document.getElementById('subtotalDisplay').textContent = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('orderTotalDisplay').textContent = `$${orderTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('totalDisplay').textContent = `$${totalToPay.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            calculateBalance();
+        }
+
+        // ========== שורות תשלום ==========
+        let paymentRowCounter = 0;
+        let currentExchangeRate = 3.22;
+
+        // שליפת שער דולר
+        async function fetchExchangeRate() {
+            // ברירת מחדל - שער עדכני
+            currentExchangeRate = 3.22;
+        }
+
+        function addPaymentRow(existingData = null) {
+            paymentRowCounter++;
+            const rowId = paymentRowCounter;
+            const tbody = document.getElementById('paymentRowsBody');
+            const today = new Date().toISOString().split('T')[0];
+            
+            const row = document.createElement('tr');
+            row.id = `payment-row-${rowId}`;
+            row.className = 'border-b hover:bg-purple-50';
+            row.innerHTML = `
+                <td class="px-4 py-3">${rowId}</td>
+                <td class="px-4 py-3">
+                    <input type="date" id="pay-date-${rowId}" class="w-32 border rounded-lg px-2 py-1" value="${existingData?.payment_date || today}">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" id="pay-amount-${rowId}" step="0.01" class="w-24 border rounded-lg px-2 py-1" oninput="calculatePaymentILS(${rowId})" value="${existingData?.amount || ''}">
+                </td>
+                <td class="px-4 py-3">
+                    <select id="pay-currency-${rowId}" class="border rounded-lg px-2 py-1" onchange="calculatePaymentILS(${rowId})">
+                        <option value="ILS" ${existingData?.currency === 'ILS' ? 'selected' : ''}>₪ שקל</option>
+                        <option value="USD" ${existingData?.currency === 'USD' ? 'selected' : ''}>$ דולר</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" id="pay-rate-${rowId}" step="0.0001" class="w-20 border rounded-lg px-2 py-1" value="${existingData?.exchange_rate || currentExchangeRate}" oninput="calculatePaymentILS(${rowId})">
+                </td>
+                <td class="px-4 py-3">
+                    <span id="pay-ils-${rowId}" class="font-bold text-green-600">${existingData?.amount_ils ? '₪' + existingData.amount_ils : '₪0.00'}</span>
+                </td>
+                <td class="px-4 py-3">
+                    <select id="pay-method-${rowId}" class="border rounded-lg px-2 py-1">
+                        <option value="מזומן" ${existingData?.payment_method === 'מזומן' ? 'selected' : ''}>מזומן</option>
+                        <option value="העברה בנקאית" ${existingData?.payment_method === 'העברה בנקאית' ? 'selected' : ''}>העברה בנקאית</option>
+                        <option value="צ'ק" ${existingData?.payment_method === "צ'ק" ? 'selected' : ''}>צ'ק</option>
+                        <option value="אשראי" ${existingData?.payment_method === 'אשראי' ? 'selected' : ''}>אשראי</option>
+                        <option value="ביט" ${existingData?.payment_method === 'ביט' ? 'selected' : ''}>ביט</option>
+                        <option value="פייבוקס" ${existingData?.payment_method === 'פייבוקס' ? 'selected' : ''}>פייבוקס</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" id="pay-ref-${rowId}" class="w-24 border rounded-lg px-2 py-1" placeholder="מס' אסמכתא" value="${existingData?.reference_number || ''}">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button type="button" onclick="removePaymentRow(${rowId})" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">✕</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            calculatePaymentILS(rowId);
+        }
+
+        function calculatePaymentILS(rowId) {
+            const amount = parseFloat(document.getElementById(`pay-amount-${rowId}`)?.value) || 0;
+            const currency = document.getElementById(`pay-currency-${rowId}`)?.value;
+            const rate = parseFloat(document.getElementById(`pay-rate-${rowId}`)?.value) || currentExchangeRate;
+            
+            let amountILS = amount;
+            if (currency === 'USD') {
+                amountILS = amount * rate;
+            }
+            
+            document.getElementById(`pay-ils-${rowId}`).textContent = `₪${amountILS.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            calculateTotalPaid();
+        }
+
+        function removePaymentRow(rowId) {
+            document.getElementById(`payment-row-${rowId}`)?.remove();
+            calculateTotalPaid();
+        }
+
+        function calculateTotalPaid() {
+            let total = 0;
+            document.querySelectorAll('[id^="pay-ils-"]').forEach(el => {
+                total += parseFloat(el.textContent.replace('₪', '').replace(/,/g, '')) || 0;
+            });
+            document.getElementById('totalPaidDisplay').textContent = `₪${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            calculateBalance();
+        }
+
+        function calculateBalance() {
+            // סה"כ לתשלום בדולר (כבר כולל מע"מ אם סומן)
+            const totalToPay = parseFloat(document.getElementById('totalDisplay')?.textContent.replace('$', '').replace(/,/g, '')) || 0;
+            
+            // חישוב סה"כ ששולם בדולרים (לפי השערים שהוזנו בפועל)
+            let totalPaidUSD = 0;
+            document.querySelectorAll('[id^="payment-row-"]').forEach(row => {
+                const rowId = row.id.replace('payment-row-', '');
+                const amountILS = parseFloat(document.getElementById(`pay-ils-${rowId}`)?.textContent.replace('₪', '').replace(/,/g, '')) || 0;
+                const rate = parseFloat(document.getElementById(`pay-rate-${rowId}`)?.value) || currentExchangeRate;
+                const amountUSD = amountILS / rate;
+                totalPaidUSD += amountUSD;
+            });
+            
+            // יתרה בדולרים
+            const balanceUSD = totalToPay - totalPaidUSD;
+            
+            // יתרה בשקלים (לפי שער נוכחי לתצוגה בלבד)
+            const balanceILS = balanceUSD * currentExchangeRate;
+            
+            // סה"כ שולם בשקלים
+            const totalPaidILS = parseFloat(document.getElementById('totalPaidDisplay')?.textContent.replace('₪', '').replace(/,/g, '')) || 0;
+            
+            const balanceEl = document.getElementById('balanceDisplay');
+            if (balanceEl) {
+                balanceEl.textContent = `₪${balanceILS.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                balanceEl.className = balanceILS > 0 ? 'px-4 py-3 font-bold text-red-600' : 'px-4 py-3 font-bold text-green-600';
+            }
+            
+            // סה"כ לתשלום בשקלים
+            const totalToPayILS = totalToPay * currentExchangeRate;
+            const totalToPayEl = document.getElementById('totalToPayDisplay');
+            if (totalToPayEl) {
+                totalToPayEl.textContent = `₪${totalToPayILS.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            }
+        }
+
+        function getPaymentRowsData() {
+            const payments = [];
+            document.querySelectorAll('[id^="payment-row-"]').forEach(row => {
+                const rowId = row.id.replace('payment-row-', '');
+                const payDate = document.getElementById(`pay-date-${rowId}`)?.value;
+                const amount = parseFloat(document.getElementById(`pay-amount-${rowId}`)?.value) || 0;
+                const currency = document.getElementById(`pay-currency-${rowId}`)?.value;
+                const rate = parseFloat(document.getElementById(`pay-rate-${rowId}`)?.value) || currentExchangeRate;
+                const method = document.getElementById(`pay-method-${rowId}`)?.value;
+                const ref = document.getElementById(`pay-ref-${rowId}`)?.value;
+                
+                if (amount > 0) {
+                    let amountILS = currency === 'USD' ? amount * rate : amount;
+                    payments.push({
+                        amount: amount,
+                        currency: currency,
+                        exchange_rate: rate,
+                        amount_ils: amountILS,
+                        payment_method: method,
+                        reference_number: ref,
+                        payment_date: payDate || new Date().toISOString().split('T')[0]
+                    });
+                }
+            });
+            return payments;
+        }
+
+        // ========== מספר הזמנה אוטומטי ==========
+        async function generateOrderNumber() {
+            const { data } = await supabaseClient
+                .from('orders')
+                .select('order_number')
+                .like('order_number', '25-%')
+                .order('order_number', { ascending: false })
+                .limit(1);
+            
+            let nextNumber = 1000;
+            if (data && data.length > 0 && data[0].order_number) {
+                const lastNum = parseInt(data[0].order_number.split('-')[1]) || 999;
+                nextNumber = lastNum + 1;
+            }
+            return `25-${nextNumber}`;
+        }
+
+        function getOrderItemsData() {
+            const items = [];
+            document.querySelectorAll('[id^="item-row-"]').forEach(row => {
+                const rowId = row.id.replace('item-row-', '');
+                const productType = document.getElementById(`product-${rowId}`)?.value || 'שיער';
+                const qty = parseFloat(document.getElementById(`qty-${rowId}`)?.value) || 0;
+                const price = parseFloat(document.getElementById(`price-${rowId}`)?.value) || 0;
+                if (qty > 0) {
+                    items.push({
+                        product_type: productType,
+                        quantity: qty,
+                        unit_price: price,
+                        total_price: qty * price
+                    });
+                }
+            });
+            return items;
+        }
+
+        async function showAddForm() { 
+            document.getElementById('formContainer').classList.remove('hidden'); 
+            document.getElementById('formTitle').textContent = 'הזמנה חדשה'; 
+            document.getElementById('orderId').value = ''; 
+            document.getElementById('orderForm').reset(); 
+            document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('orderDiscount').value = 0;
+            document.getElementById('includeVat').checked = false;
+            document.getElementById('orderItemsBody').innerHTML = '';
+            document.getElementById('paymentRowsBody').innerHTML = '';
+            itemCounter = 0;
+            paymentRowCounter = 0;
+            
+            // שליפת שער דולר
+            await fetchExchangeRate();
+            
+            // יצירת מספר הזמנה אוטומטי
+            const orderNumber = await generateOrderNumber();
+            document.getElementById('order_number').value = orderNumber;
+            
+            addOrderItem();
+            calculateOrderTotal();
+            calculateTotalPaid();
+        }
+
+        function hideForm() { 
+            document.getElementById('formContainer').classList.add('hidden'); 
+        }
+
+        async function editOrder(id) { 
+            const o = orders.find(x => x.id === id); 
+            if (!o) return;
+            
+            // שליפת שער דולר
+            await fetchExchangeRate();
+            
+            // טעינת פריטי ההזמנה
+            const { data: items } = await supabaseClient.from('order_items').select('*').eq('order_id', id);
+            
+            // טעינת תשלומים
+            const { data: payments } = await supabaseClient.from('payments').select('*').eq('order_id', id);
+            
+            document.getElementById('formTitle').textContent = 'עריכת הזמנה'; 
+            document.getElementById('orderId').value = o.id; 
+            document.getElementById('order_number').value = o.order_number || '';
+            document.getElementById('customer_id').value = o.customer_id || ''; 
+            document.getElementById('order_date').value = o.order_date || ''; 
+            document.getElementById('payment_terms').value = o.payment_terms || 'שוטף+30';
+            document.getElementById('payment_method').value = o.payment_method || 'העברה בנקאית';
+            document.getElementById('orderDiscount').value = o.discount || 0;
+            document.getElementById('includeVat').checked = o.include_vat || false;
+            document.getElementById('notes').value = o.notes || ''; 
+            
+            document.getElementById('orderItemsBody').innerHTML = '';
+            document.getElementById('paymentRowsBody').innerHTML = '';
+            itemCounter = 0;
+            paymentRowCounter = 0;
+            
+            if (items && items.length > 0) {
+                items.forEach(item => addOrderItem(item));
+            } else {
+                addOrderItem();
+            }
+            
+            // טעינת שורות תשלום קיימות
+            if (payments && payments.length > 0) {
+                payments.forEach(payment => addPaymentRow(payment));
+            }
+            
+            calculateOrderTotal();
+            calculateTotalPaid();
+            document.getElementById('formContainer').classList.remove('hidden'); 
+        }
+
+        async function saveOrder(event) {
+            event.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            setLoading(btn, true);
+            
+            const idValue = document.getElementById('orderId').value;
+            const id = idValue && idValue.trim() !== '' ? idValue : null;
+            const items = getOrderItemsData();
+            const payments = getPaymentRowsData();
+            const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
+            const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
+            const totalAfterDiscount = subtotal - discount;
+            const totalPaid = payments.reduce((sum, p) => sum + p.amount_ils, 0);
+            const includeVat = document.getElementById('includeVat')?.checked || false;
+            const vatAmount = includeVat ? (totalAfterDiscount - totalPaid) * 0.18 : 0;
+            
+            const customerIdValue = document.getElementById('customer_id').value;
+            const customerId = customerIdValue && customerIdValue.trim() !== '' ? customerIdValue : null;
+            
+            const orderData = { 
+                order_number: document.getElementById('order_number').value,
+                customer_id: customerId, 
+                order_date: document.getElementById('order_date').value || null, 
+                status: 'פתוח', 
+                payment_terms: document.getElementById('payment_terms').value,
+                payment_method: document.getElementById('payment_method').value,
+                discount: discount,
+                include_vat: includeVat,
+                vat_amount: vatAmount,
+                total_amount: totalAfterDiscount,
+                paid_amount: totalPaid,
+                balance: totalAfterDiscount - totalPaid,
+                payment_status: totalPaid >= totalAfterDiscount ? 'שולם במלואו' : totalPaid > 0 ? 'שולם חלקית' : 'לא שולם',
+                notes: document.getElementById('notes').value 
+            };
+            
+            try {
+                let orderId = id;
+                
+                console.log('=== DEBUG SAVE ORDER ===');
+                console.log('id:', id);
+                console.log('orderData:', JSON.stringify(orderData, null, 2));
+                console.log('items:', JSON.stringify(items, null, 2));
+                console.log('payments:', JSON.stringify(payments, null, 2));
+                console.log('customerId:', customerId);
+                
+                if (id) {
+                    const { error } = await supabaseClient.from('orders').update(orderData).eq('id', id);
+                    if (error) { console.log('Error updating order:', error); throw error; }
+                    // מחיקת פריטים ותשלומים ישנים
+                    await supabaseClient.from('order_items').delete().eq('order_id', id);
+                    await supabaseClient.from('payments').delete().eq('order_id', id);
+                } else {
+                    const { data, error } = await supabaseClient.from('orders').insert([orderData]).select();
+                    if (error) { console.log('Error inserting order:', error); throw error; }
+                    orderId = data[0].id;
+                }
+                
+                console.log('orderId after save:', orderId);
+                
+                // הוספת פריטים חדשים
+                if (items.length > 0) {
+                    const itemsWithOrderId = items.map(item => ({ ...item, order_id: orderId }));
+                    console.log('itemsWithOrderId:', JSON.stringify(itemsWithOrderId, null, 2));
+                    const { error } = await supabaseClient.from('order_items').insert(itemsWithOrderId);
+                    if (error) { console.log('Error inserting items:', error); throw error; }
+                }
+                
+                // הוספת תשלומים חדשים
+                if (payments.length > 0) {
+                    const paymentsWithIds = payments.map(p => ({ 
+                        ...p, 
+                        order_id: orderId,
+                        customer_id: customerId
+                    }));
+                    console.log('paymentsWithIds:', JSON.stringify(paymentsWithIds, null, 2));
+                    const { error } = await supabaseClient.from('payments').insert(paymentsWithIds);
+                    if (error) { console.log('Error inserting payments:', error); throw error; }
+                }
+                
+                showToast(id ? 'ההזמנה עודכנה בהצלחה!' : 'ההזמנה נוספה בהצלחה!');
+                hideForm();
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                showToast('שגיאה: ' + error.message, 'error');
+            }
+            
+            setLoading(btn, false);
+        }
+
+        async function deleteOrder(id) { 
+            if (!confirm('למחוק את ההזמנה?')) return; 
+            await supabaseClient.from('order_items').delete().eq('order_id', id);
+            await supabaseClient.from('orders').delete().eq('id', id); 
+            showToast('ההזמנה נמחקה');
+            loadOrders(); 
+        }
+
+        // הדפסת תעודת משלוח
+        async function printDeliveryNote(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const customer = customers.find(c => c.id === order.customer_id);
+            const { data: items } = await supabaseClient.from('order_items').select('*, products(*, suppliers(name))').eq('order_id', orderId);
+            
+            // חישוב סה"כ
+            let totalAmount = 0;
+            (items || []).forEach(item => {
+                totalAmount += (item.quantity || 0) * (item.unit_price || 0);
+            });
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="padding: 40px; font-family: 'Heebo', sans-serif; direction: rtl;">
+                    <!-- כותרת עם לוגו -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #d4af37; padding-bottom: 20px;">
+                        <div>
+                            <h1 style="font-size: 28px; color: #1a1a2e; margin: 0;">תעודת משלוח מס' ${order.order_number || orderId.substring(0,8)}</h1>
+                            <p style="color: #666; margin: 5px 0;">תאריך: ${order.order_date || ''}</p>
+                        </div>
+                        <div style="text-align: left;">
+                            <img src="logo.jpeg" style="width: 80px; height: 80px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <!-- פרטי לקוח + פרטי משלוח בשורה אחת -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong>פרטי לקוח:</strong><br>
+                            <strong>שם החברה:</strong> ${customer?.company_name || ''}<br>
+                            <strong>איש קשר:</strong> ${customer?.contact_name || ''}<br>
+                            <strong>כתובת:</strong> ${customer?.address || ''}<br>
+                            <strong>טלפון:</strong> ${customer?.phone || ''}
+                        </div>
+                        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #bee5eb;">
+                            <strong>פרטי משלוח:</strong><br>
+                            <strong>תנאי תשלום:</strong> ${order.payment_terms || ''}<br>
+                            <strong>אמצעי תשלום:</strong> ${order.payment_method || ''}
+                        </div>
+                    </div>
+                    
+                    <!-- טבלת מוצרים עם מחיר בדולר -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #1a1a2e; color: white;">
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">#</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">מוצר</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">כמות</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">מחיר ליחידה</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">סה"כ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(items || []).map((item, i) => `
+                                <tr style="background: ${i % 2 === 0 ? '#fff' : '#f8f9fa'};">
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${i + 1}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${item.products?.suppliers?.name || ''} - ${item.products?.product_type || ''} (${item.products?.quality || ''})</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${item.quantity}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">$${item.unit_price || 0}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">$${((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #d4af37; color: white; font-weight: bold;">
+                                <td colspan="4" style="padding: 12px; border: 1px solid #ddd; text-align: left;">סה"כ להזמנה:</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-size: 18px;">$${totalAmount.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    ${order.notes ? `<div style="padding: 15px; background: #fff3cd; border-radius: 8px; margin-bottom: 40px;"><strong>הערות:</strong> ${order.notes}</div>` : '<div style="margin-bottom: 40px;"></div>'}
+                </div>
+            `;
+            printArea.classList.remove('hidden');
+            window.print();
+            printArea.classList.add('hidden');
+        }
+
+        // הפקת חשבונית
+        async function createInvoice(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const customer = customers.find(c => c.id === order.customer_id);
+            const { data: items } = await supabaseClient.from('order_items').select('*, products(*, suppliers(name))').eq('order_id', orderId);
+            
+            // שער דולר לחשבונית
+            const exchangeRate = 3.22;
+            
+            // יצירת מספר חשבונית אוטומטי 2025-2000 וכו'
+            const { data: lastInvoice } = await supabaseClient
+                .from('invoices')
+                .select('invoice_number')
+                .like('invoice_number', '2025-%')
+                .order('invoice_number', { ascending: false })
+                .limit(1);
+            
+            let nextInvoiceNum = 2000;
+            if (lastInvoice && lastInvoice.length > 0 && lastInvoice[0].invoice_number) {
+                const lastNum = parseInt(lastInvoice[0].invoice_number.split('-')[1]) || 1999;
+                nextInvoiceNum = lastNum + 1;
+            }
+            const invoiceNumber = `2025-${nextInvoiceNum}`;
+            
+            // חישוב סכומים בשקל (המרה מדולר)
+            const subtotalUSD = order.total_amount || 0;
+            const subtotalILS = subtotalUSD * exchangeRate;
+            const vat = subtotalILS * 0.18;
+            const total = subtotalILS + vat;
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="padding: 40px; font-family: 'Heebo', sans-serif; direction: rtl;">
+                    <!-- כותרת עם לוגו -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #d4af37; padding-bottom: 20px;">
+                        <div>
+                            <h1 style="font-size: 28px; color: #1a1a2e; margin: 0;">חשבונית מס / קבלה מס' ${invoiceNumber}</h1>
+                            <p style="color: #666; margin: 5px 0;">תאריך: ${new Date().toLocaleDateString('he-IL')}</p>
+                        </div>
+                        <div style="text-align: left;">
+                            <img src="logo.jpeg" style="width: 80px; height: 80px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <!-- פרטי לקוח + פרטי הזמנה בשורה אחת -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong>פרטי לקוח:</strong><br>
+                            <strong>שם החברה:</strong> ${customer?.company_name || ''}<br>
+                            <strong>איש קשר:</strong> ${customer?.contact_name || ''}<br>
+                            <strong>כתובת:</strong> ${customer?.address || ''}<br>
+                            <strong>ח.פ:</strong> ${customer?.tax_id || ''}<br>
+                            <strong>טלפון:</strong> ${customer?.phone || ''}
+                        </div>
+                        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; border: 1px solid #bee5eb;">
+                            <strong>פרטי הזמנה:</strong><br>
+                            <strong>מס' הזמנה:</strong> ${order.order_number || ''}<br>
+                            <strong>תנאי תשלום:</strong> ${order.payment_terms || ''}<br>
+                            <strong>אמצעי תשלום:</strong> ${order.payment_method || ''}
+                        </div>
+                    </div>
+                    
+                    <!-- טבלת פריטים - מחירים בשקל -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #1a1a2e; color: white;">
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">#</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">תיאור</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">כמות</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">מחיר יח' (₪)</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">סה"כ (₪)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(items || []).map((item, i) => {
+                                const unitPriceILS = (item.unit_price || 0) * exchangeRate;
+                                const totalPriceILS = (item.quantity || 0) * unitPriceILS;
+                                return `
+                                <tr style="background: ${i % 2 === 0 ? '#fff' : '#f8f9fa'};">
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${i + 1}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${item.products?.suppliers?.name || ''} - ${item.products?.product_type || ''} (${item.products?.quality || ''})</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">${item.quantity}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd;">₪${unitPriceILS.toFixed(2)}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">₪${totalPriceILS.toFixed(2)}</td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <!-- סיכום -->
+                    <div style="display: flex; justify-content: flex-end;">
+                        <div style="width: 280px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #666;">
+                                <span>סה"כ בדולר:</span>
+                                <span>$${subtotalUSD.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>סה"כ לפני מע"מ:</span>
+                                <span>₪${subtotalILS.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>מע"מ (18%):</span>
+                                <span>₪${vat.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; border-top: 2px solid #d4af37; padding-top: 10px;">
+                                <span>סה"כ לתשלום:</span>
+                                <span>₪${total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${order.notes ? `<div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;"><strong>הערות:</strong> ${order.notes}</div>` : ''}
+                </div>
+            `;
+            printArea.classList.remove('hidden');
+            window.print();
+            printArea.classList.add('hidden');
+        }
+
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

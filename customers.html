@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - ניהול לקוחות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+            .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="toastContainer"></div>
+
+    <!-- סרגל צד קבוע -->
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item">
+                <span>📊</span>
+                <span>דשבורד</span>
+            </a>
+            <a href="suppliers.html" class="nav-item">
+                <span>🏭</span>
+                <span>ספקים</span>
+            </a>
+            <a href="trips.html" class="nav-item">
+                <span>✈️</span>
+                <span>נסיעות</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <span>📦</span>
+                <span>מוצרים</span>
+            </a>
+            <a href="customers.html" class="nav-item active">
+                <span>👥</span>
+                <span>לקוחות</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <span>📋</span>
+                <span>הזמנות</span>
+            </a>
+            <a href="invoices.html" class="nav-item">
+                <span>🧾</span>
+                <span>חשבוניות</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <span>📈</span>
+                <span>דוחות</span>
+            </a>
+            <a href="maintenance.html" class="nav-item">
+                <span>⚙️</span>
+                <span>תחזוקה</span>
+            </a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span>
+                <span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content">
+        <main class="p-8">
+
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">ניהול לקוחות</h2>
+                <p class="text-gray-500">ניהול כל הלקוחות במערכת</p>
+            </div>
+            <button onclick="showAddForm()" class="gold-gradient text-white px-6 py-3 rounded-xl hover:opacity-90 transition shadow-lg">+ הוסף לקוח חדש</button>
+        </div>
+
+        <div id="formContainer" class="bg-white rounded-2xl shadow-lg p-6 mb-8 hidden">
+            <h3 id="formTitle" class="text-2xl font-bold mb-6">הוספת לקוח חדש</h3>
+            <form id="customerForm" onsubmit="saveCustomer(event)">
+                <input type="hidden" id="customerId">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">שם החברה *</label>
+                        <input type="text" id="company_name" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">איש קשר</label>
+                        <input type="text" id="contact_name" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">טלפון</label>
+                        <input type="text" id="phone" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">טלפון נוסף</label>
+                        <input type="text" id="phone2" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">אימייל</label>
+                        <input type="email" id="email" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">כתובת בית</label>
+                        <input type="text" id="address" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">כתובת עבודה</label>
+                        <input type="text" id="work_address" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ח.פ / ע.מ</label>
+                        <input type="text" id="tax_id" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">הערות</label>
+                    <textarea id="notes" rows="2" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">שמור</button>
+                    <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+            <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין לקוחות במערכת</div>
+            <table id="customersTable" class="w-full hidden">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-6 py-4 text-right">שם החברה</th>
+                        <th class="px-6 py-4 text-right">איש קשר</th>
+                        <th class="px-6 py-4 text-right">טלפון</th>
+                        <th class="px-6 py-4 text-right">כתובת בית</th>
+                        <th class="px-6 py-4 text-right">ח.פ</th>
+                        <th class="px-6 py-4 text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+                        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let customers = [];
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function setLoading(btn, loading) {
+            if (loading) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> שומר...'; }
+            else { btn.disabled = false; btn.innerHTML = 'שמור'; }
+        }
+
+        window.onload = function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                loadCustomers();
+            }
+        };
+
+        async function loadCustomers() {
+            document.getElementById('loading').classList.remove('hidden');
+            const { data, error } = await supabaseClient.from('customers').select('*').order('company_name');
+            if (error) { document.getElementById('loading').textContent = 'שגיאה: ' + error.message; return; }
+            customers = data || [];
+            renderTable();
+        }
+
+        function renderTable() {
+            document.getElementById('loading').classList.add('hidden');
+            if (customers.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
+            document.getElementById('customersTable').classList.remove('hidden');
+            document.getElementById('tableBody').innerHTML = customers.map((c, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="px-6 py-4 font-semibold">${c.company_name || ''}</td>
+                    <td class="px-6 py-4">${c.contact_name || ''}</td>
+                    <td class="px-6 py-4">${c.phone || ''}</td>
+                    <td class="px-6 py-4">${c.address || ''}</td>
+                    <td class="px-6 py-4">${c.tax_id || ''}</td>
+                    <td class="px-6 py-4"><div class="flex gap-2 justify-center">
+                        <button onclick="editCustomer('${c.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
+                        <button onclick="deleteCustomer('${c.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
+                    </div></td>
+                </tr>
+            `).join('');
+        }
+
+        function showAddForm() { document.getElementById('formContainer').classList.remove('hidden'); document.getElementById('formTitle').textContent = 'הוספת לקוח חדש'; document.getElementById('customerId').value = ''; document.getElementById('customerForm').reset(); }
+        function hideForm() { document.getElementById('formContainer').classList.add('hidden'); }
+        function editCustomer(id) { const c = customers.find(x => x.id === id); if (!c) return; document.getElementById('formTitle').textContent = 'עריכת לקוח'; document.getElementById('customerId').value = c.id; document.getElementById('company_name').value = c.company_name || ''; document.getElementById('contact_name').value = c.contact_name || ''; document.getElementById('phone').value = c.phone || ''; document.getElementById('phone2').value = c.phone2 || ''; document.getElementById('email').value = c.email || ''; document.getElementById('address').value = c.address || ''; document.getElementById('work_address').value = c.work_address || ''; document.getElementById('tax_id').value = c.tax_id || ''; document.getElementById('notes').value = c.notes || ''; document.getElementById('formContainer').classList.remove('hidden'); }
+
+        async function saveCustomer(event) {
+            event.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            setLoading(btn, true);
+            const id = document.getElementById('customerId').value;
+            const data = { company_name: document.getElementById('company_name').value, contact_name: document.getElementById('contact_name').value, phone: document.getElementById('phone').value, phone2: document.getElementById('phone2').value, email: document.getElementById('email').value, address: document.getElementById('address').value, work_address: document.getElementById('work_address').value, tax_id: document.getElementById('tax_id').value, notes: document.getElementById('notes').value };
+            const result = id ? await supabaseClient.from('customers').update(data).eq('id', id) : await supabaseClient.from('customers').insert([data]);
+            setLoading(btn, false);
+            if (result.error) { showToast('שגיאה: ' + result.error.message, 'error'); return; }
+            showToast(id ? 'הלקוח עודכן בהצלחה!' : 'הלקוח נוסף בהצלחה!'); setTimeout(() => location.reload(), 500);
+        }
+
+        async function deleteCustomer(id) { 
+            if (!confirm('למחוק את הלקוח?')) return; 
+            
+            // בדיקה אם יש הזמנות ללקוח
+            const { data: orders } = await supabaseClient.from('orders').select('id').eq('customer_id', id);
+            if (orders && orders.length > 0) {
+                showToast('לא ניתן למחוק לקוח עם הזמנות קיימות! (' + orders.length + ' הזמנות)', 'error');
+                return;
+            }
+            
+            // בדיקה אם יש חשבוניות ללקוח
+            const { data: invoices } = await supabaseClient.from('invoices').select('id').eq('customer_id', id);
+            if (invoices && invoices.length > 0) {
+                showToast('לא ניתן למחוק לקוח עם חשבוניות קיימות! (' + invoices.length + ' חשבוניות)', 'error');
+                return;
+            }
+            
+            await supabaseClient.from('customers').delete().eq('id', id); 
+            showToast('הלקוח נמחק'); 
+            setTimeout(() => location.reload(), 500); 
+        }
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

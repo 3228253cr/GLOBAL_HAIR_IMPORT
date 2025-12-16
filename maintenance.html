@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - תחזוקה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+            .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        
+        /* סגנון הדפסה נקי */
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body { background: white !important; }
+            .sidebar, .nav-item, button, .no-print { display: none !important; }
+            .main-content { margin-right: 0 !important; }
+            .bg-white { box-shadow: none !important; }
+            .bg-gray-800 { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-yellow-100, .bg-green-100, .bg-green-50 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            h3 { font-size: 18pt !important; margin-bottom: 10px !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #333 !important; padding: 6px !important; font-size: 10pt !important; }
+            thead { background: #333 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .summary-box { border: 2px solid #333 !important; margin-top: 15px; page-break-inside: avoid; }
+            .summary-box .grid { display: table !important; width: 100% !important; table-layout: fixed !important; }
+            .summary-box .grid > div { display: table-cell !important; width: 20% !important; border: 1px solid #333 !important; padding: 8px !important; text-align: center !important; vertical-align: middle !important; }
+            .summary-box .text-2xl { font-size: 14pt !important; }
+            .summary-box .text-sm { font-size: 9pt !important; }
+            .text-green-600 { color: #059669 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .text-red-600 { color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .text-blue-600 { color: #2563eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .text-purple-600 { color: #9333ea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+        
+        .print-header { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="toastContainer"></div>
+
+    <!-- סרגל צד קבוע -->
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item">
+                <span>📊</span>
+                <span>דשבורד</span>
+            </a>
+            <a href="suppliers.html" class="nav-item">
+                <span>🏭</span>
+                <span>ספקים</span>
+            </a>
+            <a href="trips.html" class="nav-item">
+                <span>✈️</span>
+                <span>נסיעות</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <span>📦</span>
+                <span>מוצרים</span>
+            </a>
+            <a href="customers.html" class="nav-item">
+                <span>👥</span>
+                <span>לקוחות</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <span>📋</span>
+                <span>הזמנות</span>
+            </a>
+            <a href="invoices.html" class="nav-item">
+                <span>🧾</span>
+                <span>חשבוניות</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <span>📈</span>
+                <span>דוחות</span>
+            </a>
+            <a href="maintenance.html" class="nav-item active">
+                <span>⚙️</span>
+                <span>תחזוקה</span>
+            </a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span>
+                <span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content">
+        <main class="p-8">
+
+        <h2 class="text-3xl font-bold text-gray-800 mb-8">תחזוקת מערכת</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <button onclick="showSection('users')" id="btn-users" class="bg-blue-500 text-white p-6 rounded-2xl shadow-lg hover:bg-blue-600 transition">
+                <span class="text-3xl block mb-2">👥</span>
+                <span class="font-bold">ניהול משתמשים</span>
+            </button>
+            <button onclick="showSection('reportBySupplier')" id="btn-reportBySupplier" class="bg-green-500 text-white p-6 rounded-2xl shadow-lg hover:bg-green-600 transition">
+                <span class="text-3xl block mb-2">📊</span>
+                <span class="font-bold">דוח רכישות לפי ספק</span>
+            </button>
+            <button onclick="showSection('reportByDate')" id="btn-reportByDate" class="bg-purple-500 text-white p-6 rounded-2xl shadow-lg hover:bg-purple-600 transition">
+                <span class="text-3xl block mb-2">📅</span>
+                <span class="font-bold">דוח רכישות לפי תאריכים</span>
+            </button>
+        </div>
+
+        <!-- ניהול משתמשים -->
+        <div id="usersSection" class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">ניהול משתמשים</h3>
+                <button onclick="showAddUser()" class="gold-gradient text-white px-6 py-3 rounded-xl hover:opacity-90 transition">+ הוסף משתמש</button>
+            </div>
+
+            <div id="userFormContainer" class="bg-gray-50 rounded-xl p-6 mb-6 hidden">
+                <h4 id="userFormTitle" class="text-xl font-bold mb-4">הוספת משתמש חדש</h4>
+                <form id="userForm" onsubmit="saveUser(event)">
+                    <input type="hidden" id="userId">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">שם משתמש *</label>
+                            <input type="text" id="username" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">סיסמה *</label>
+                            <input type="text" id="password" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">תפקיד</label>
+                            <select id="role" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                                <option value="user">משתמש</option>
+                                <option value="admin">מנהל</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <button type="submit" id="saveUserBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">שמור</button>
+                        <button type="button" onclick="hideUserForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                    </div>
+                </form>
+            </div>
+
+            <table class="w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-6 py-4 text-right">שם משתמש</th>
+                        <th class="px-6 py-4 text-right">תפקיד</th>
+                        <th class="px-6 py-4 text-right">תאריך יצירה</th>
+                        <th class="px-6 py-4 text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">טוען משתמשים...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- דוח רכישות לפי ספק -->
+        <div id="reportBySupplierSection" class="bg-white rounded-2xl shadow-lg p-6 hidden">
+            <h3 class="text-2xl font-bold mb-6">📊 דוח רכישות לפי ספק</h3>
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">בחר ספק</label>
+                <select id="supplierFilter" onchange="loadReportBySupplier()" class="w-full md:w-64 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    <option value="">כל הספקים</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="px-6 py-4 text-right">תאריך</th>
+                            <th class="px-6 py-4 text-right">שם מוצר</th>
+                            <th class="px-6 py-4 text-right">כמות</th>
+                            <th class="px-6 py-4 text-right">סה"כ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBySupplierBody"></tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="printReportBySupplier()" class="bg-blue-500 text-white px-6 py-3 rounded-xl hover:bg-blue-600 transition">🖨️ הדפס דוח</button>
+            </div>
+        </div>
+
+        <!-- דוח רכישות לפי תאריכים -->
+        <div id="reportByDateSection" class="bg-white rounded-2xl shadow-lg p-6 hidden">
+            <div class="print-header">
+                <h2 class="text-2xl font-bold">Global Imports - דוח רכישות</h2>
+                <p id="printDateRange"></p>
+            </div>
+            <h3 class="text-2xl font-bold mb-6 no-print">📅 דוח רכישות לפי תאריכים</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 no-print">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">מתאריך</label>
+                    <input type="date" id="dateFrom" onchange="loadReportByDate()" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">עד תאריך</label>
+                    <input type="date" id="dateTo" onchange="loadReportByDate()" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="loadReportByDate()" class="bg-green-500 text-white px-6 py-3 rounded-xl hover:bg-green-600 transition">🔍 חפש</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full" id="reportByDateTable">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="px-6 py-4 text-right">תאריך</th>
+                            <th class="px-6 py-4 text-right">ספק</th>
+                            <th class="px-6 py-4 text-right">שם מוצר</th>
+                            <th class="px-6 py-4 text-right">כמות</th>
+                            <th class="px-6 py-4 text-right">סה"כ</th>
+                            <th class="px-6 py-4 text-right">שולם</th>
+                            <th class="px-6 py-4 text-right">יתרה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportByDateBody"></tbody>
+                </table>
+            </div>
+            
+            <!-- סיכום במשבצות -->
+            <div id="reportSummaryBox" class="mt-6 border-2 border-gray-800 rounded-xl overflow-hidden summary-box hidden">
+                <div class="bg-gray-800 text-white text-center py-3 font-bold text-xl">סיכום</div>
+                <div class="grid grid-cols-5 divide-x divide-gray-300 bg-green-50">
+                    <div class="p-4 text-center border-l-2 border-gray-400">
+                        <div class="text-gray-600 text-sm">סה"כ כמות</div>
+                        <div id="summaryQty" class="text-2xl font-bold text-gray-800">0</div>
+                    </div>
+                    <div class="p-4 text-center border-l-2 border-gray-400">
+                        <div class="text-gray-600 text-sm">סה"כ לתשלום</div>
+                        <div id="summaryTotal" class="text-2xl font-bold text-blue-600">$0.00</div>
+                    </div>
+                    <div class="p-4 text-center border-l-2 border-gray-400">
+                        <div class="text-gray-600 text-sm">ממוצע ליחידה</div>
+                        <div id="summaryAvg" class="text-2xl font-bold text-purple-600">$0.00</div>
+                    </div>
+                    <div class="p-4 text-center">
+                        <div class="text-gray-600 text-sm">שולם</div>
+                        <div id="summaryPaid" class="text-2xl font-bold text-green-600">$0.00</div>
+                    </div>
+                    <div class="p-4 text-center">
+                        <div class="text-gray-600 text-sm">יתרה</div>
+                        <div id="summaryBalance" class="text-2xl font-bold text-red-600">$0.00</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex justify-end no-print">
+                <button onclick="printReportByDate()" class="bg-blue-500 text-white px-6 py-3 rounded-xl hover:bg-blue-600 transition">🖨️ הדפס דוח</button>
+            </div>
+        </div>
+                        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let users = [];
+        let currentUserRole = 'user';
+        let isAdminVerified = false;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onload = async function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                
+                // בדיקת תפקיד המשתמש הנוכחי
+                const { data: userData } = await supabaseClient.from('users').select('role').eq('username', username).single();
+                if (userData) {
+                    currentUserRole = userData.role;
+                }
+                
+                loadUsers();
+            }
+        };
+
+        async function loadUsers() {
+            const { data, error } = await supabaseClient.from('users').select('*').order('created_at');
+            if (error) { document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-red-500">שגיאה: ' + error.message + '</td></tr>'; return; }
+            users = data || [];
+            renderUsers();
+        }
+
+        function renderUsers() {
+            if (users.length === 0) {
+                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">אין משתמשים במערכת</td></tr>';
+                return;
+            }
+            
+            const isAdmin = currentUserRole === 'admin';
+            
+            document.getElementById('usersTableBody').innerHTML = users.map((u, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                    <td class="px-6 py-4 font-semibold">${u.username}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-sm ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">${u.role === 'admin' ? 'מנהל' : 'משתמש'}</span></td>
+                    <td class="px-6 py-4">${u.created_at ? new Date(u.created_at).toLocaleDateString('he-IL') : ''}</td>
+                    <td class="px-6 py-4"><div class="flex gap-2 justify-center">
+                        ${isAdmin ? `
+                            <button onclick="verifyAdminAndEdit('${u.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
+                            <button onclick="verifyAdminAndDelete('${u.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
+                        ` : `
+                            <span class="text-gray-400 text-sm">🔒 רק מנהל</span>
+                        `}
+                    </div></td>
+                </tr>
+            `).join('');
+        }
+
+        // פופאפ אימות סיסמת אדמין
+        function showAdminVerification(callback) {
+            if (isAdminVerified) {
+                callback();
+                return;
+            }
+            
+            const password = prompt('הזן סיסמת מנהל לאימות:');
+            if (!password) return;
+            
+            verifyAdminPassword(password, callback);
+        }
+
+        async function verifyAdminPassword(password, callback) {
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username');
+            const { data } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .eq('role', 'admin')
+                .single();
+            
+            if (data) {
+                isAdminVerified = true;
+                showToast('אומת בהצלחה!');
+                callback();
+            } else {
+                showToast('סיסמה שגויה או אין הרשאות מנהל!', 'error');
+            }
+        }
+
+        function verifyAdminAndEdit(id) {
+            showAdminVerification(() => editUser(id));
+        }
+
+        function verifyAdminAndDelete(id) {
+            showAdminVerification(() => deleteUser(id));
+        }
+
+        function showAddUser() { 
+            if (currentUserRole !== 'admin') {
+                showToast('רק מנהל יכול להוסיף משתמשים!', 'error');
+                return;
+            }
+            showAdminVerification(() => {
+                document.getElementById('userFormContainer').classList.remove('hidden'); 
+                document.getElementById('userFormTitle').textContent = 'הוספת משתמש חדש'; 
+                document.getElementById('userId').value = ''; 
+                document.getElementById('userForm').reset();
+            });
+        }
+        
+        function hideUserForm() { document.getElementById('userFormContainer').classList.add('hidden'); }
+        
+        function editUser(id) { 
+            const u = users.find(x => x.id === id); 
+            if (!u) return; 
+            document.getElementById('userFormTitle').textContent = 'עריכת משתמש'; 
+            document.getElementById('userId').value = u.id; 
+            document.getElementById('username').value = u.username; 
+            document.getElementById('password').value = u.password; 
+            document.getElementById('role').value = u.role || 'user'; 
+            document.getElementById('userFormContainer').classList.remove('hidden'); 
+        }
+
+        async function saveUser(event) {
+            event.preventDefault();
+            if (!isAdminVerified) {
+                showToast('נדרש אימות מנהל!', 'error');
+                return;
+            }
+            const id = document.getElementById('userId').value;
+            const data = { username: document.getElementById('username').value, password: document.getElementById('password').value, role: document.getElementById('role').value };
+            const result = id ? await supabaseClient.from('users').update(data).eq('id', id) : await supabaseClient.from('users').insert([data]);
+            if (result.error) { showToast('שגיאה: ' + result.error.message, 'error'); return; }
+            showToast(id ? 'המשתמש עודכן!' : 'המשתמש נוסף!'); setTimeout(() => location.reload(), 500);
+        }
+
+        async function deleteUser(id) { 
+            if (!confirm('למחוק את המשתמש?')) return; 
+            await supabaseClient.from('users').delete().eq('id', id); 
+            showToast('המשתמש נמחק'); 
+            setTimeout(() => location.reload(), 500); 
+        }
+
+        // ========== דוחות רכישות ==========
+        let suppliers = [];
+        let products = [];
+        let productPayments = [];
+
+        async function loadSuppliersForReports() {
+            const { data } = await supabaseClient.from('suppliers').select('*').order('name');
+            suppliers = data || [];
+            document.getElementById('supplierFilter').innerHTML = '<option value="">כל הספקים</option>' + 
+                suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        async function loadReportBySupplier() {
+            const supplierId = document.getElementById('supplierFilter').value;
+            let query = supabaseClient.from('products').select('*, suppliers(name)').order('product_date', { ascending: false });
+            if (supplierId) query = query.eq('supplier_id', supplierId);
+            
+            const { data, error } = await query;
+            if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+            
+            const tbody = document.getElementById('reportBySupplierBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">אין נתונים</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map((p, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                    <td class="px-6 py-4">${p.product_date || ''}</td>
+                    <td class="px-6 py-4">${p.product_type || ''}</td>
+                    <td class="px-6 py-4">${p.quantity || ''}</td>
+                    <td class="px-6 py-4 font-bold">$${p.total_price || 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadReportByDate() {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            if (!dateFrom || !dateTo) {
+                showToast('נא לבחור טווח תאריכים', 'error');
+                return;
+            }
+            
+            // עדכון תאריכים להדפסה
+            document.getElementById('printDateRange').textContent = `מתאריך: ${dateFrom} עד תאריך: ${dateTo}`;
+            
+            // שליפת מוצרים
+            const { data: productsData, error } = await supabaseClient
+                .from('products')
+                .select('*, suppliers(name)')
+                .gte('product_date', dateFrom)
+                .lte('product_date', dateTo)
+                .order('product_date', { ascending: false });
+            
+            if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+            
+            // שליפת תשלומים
+            const { data: paymentsData } = await supabaseClient.from('product_payments').select('*');
+            productPayments = paymentsData || [];
+            
+            const tbody = document.getElementById('reportByDateBody');
+            const summaryBox = document.getElementById('reportSummaryBox');
+            
+            if (!productsData || productsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">אין נתונים בטווח התאריכים</td></tr>';
+                summaryBox.classList.add('hidden');
+                return;
+            }
+            
+            let totalQty = 0;
+            let totalAmount = 0;
+            let totalPaid = 0;
+            
+            tbody.innerHTML = productsData.map((p, i) => {
+                const payments = productPayments.filter(pay => pay.product_id === p.id);
+                const paid = payments.reduce((sum, pay) => sum + (parseFloat(pay.amount) || 0), 0);
+                const balance = (parseFloat(p.total_price) || 0) - paid;
+                
+                totalQty += parseInt(p.quantity) || 0;
+                totalAmount += parseFloat(p.total_price) || 0;
+                totalPaid += paid;
+                
+                const formatNum = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                return `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                    <td class="px-6 py-4">${p.product_date || ''}</td>
+                    <td class="px-6 py-4">${p.suppliers?.name || ''}</td>
+                    <td class="px-6 py-4">${p.product_type || ''}</td>
+                    <td class="px-6 py-4">${(p.quantity || 0).toLocaleString()}</td>
+                    <td class="px-6 py-4 font-bold">$${formatNum(parseFloat(p.total_price) || 0)}</td>
+                    <td class="px-6 py-4 text-green-600">$${formatNum(paid)}</td>
+                    <td class="px-6 py-4 ${balance > 0 ? 'text-red-600' : 'text-green-600'} font-bold">$${formatNum(balance)}</td>
+                </tr>
+            `}).join('');
+            
+            const totalBalance = totalAmount - totalPaid;
+            const avgPerUnit = totalQty > 0 ? totalAmount / totalQty : 0;
+            
+            // פונקציה למפריד אלפים
+            const formatNumber = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            // עדכון תיבת הסיכום
+            document.getElementById('summaryQty').textContent = totalQty.toLocaleString();
+            document.getElementById('summaryTotal').textContent = `$${formatNumber(totalAmount)}`;
+            document.getElementById('summaryAvg').textContent = `$${formatNumber(avgPerUnit)}`;
+            document.getElementById('summaryPaid').textContent = `$${formatNumber(totalPaid)}`;
+            document.getElementById('summaryBalance').textContent = `$${formatNumber(totalBalance)}`;
+            document.getElementById('summaryBalance').className = totalBalance > 0 ? 'text-2xl font-bold text-red-600' : 'text-2xl font-bold text-green-600';
+            summaryBox.classList.remove('hidden');
+        }
+
+        function printReportBySupplier() {
+            window.print();
+        }
+
+        function printReportByDate() {
+            window.print();
+        }
+
+        function showSection(section) {
+            // הסתרת כל הסקציות
+            document.getElementById('usersSection').classList.add('hidden');
+            document.getElementById('reportBySupplierSection').classList.add('hidden');
+            document.getElementById('reportByDateSection').classList.add('hidden');
+            
+            // הצגת הסקציה הנבחרת
+            if (section === 'users') {
+                document.getElementById('usersSection').classList.remove('hidden');
+            } else if (section === 'reportBySupplier') {
+                document.getElementById('reportBySupplierSection').classList.remove('hidden');
+                loadSuppliersForReports();
+                loadReportBySupplier();
+            } else if (section === 'reportByDate') {
+                document.getElementById('reportByDateSection').classList.remove('hidden');
+                // הגדרת תאריכים - חודש אחרון כברירת מחדל
+                const today = new Date();
+                const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+                document.getElementById('dateFrom').value = monthAgo.toISOString().split('T')[0];
+            }
+        }
+        
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>
