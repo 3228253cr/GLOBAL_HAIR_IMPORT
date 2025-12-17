@@ -31,20 +31,20 @@
                 <p class="text-gray-500">Global Imports - Premium Hair Supply</p>
             </div>
             
-            <form id="loginForm" class="space-y-4" autocomplete="off">
+            <form id="loginForm" class="space-y-4" onsubmit="return false;">
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
-                    <input type="text" id="loginUsername" required autocomplete="username"
+                    <input type="text" id="loginUsername" autocomplete="off"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן שם משתמש">
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                    <input type="password" id="loginPassword" required autocomplete="current-password"
+                    <input type="password" id="loginPassword" autocomplete="off"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן סיסמה">
                 </div>
-                <button type="submit" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90">
+                <button type="button" onclick="doLogin()" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90">
                     🔐 התחבר
                 </button>
             </form>
@@ -213,17 +213,14 @@
             return num ? num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
         }
 
-        // Login - ללא is_active
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
+        // Login function
+        async function doLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             
             if (!username || !password) {
                 showToast('הזן שם משתמש וסיסמה', 'error');
-                return false;
+                return;
             }
 
             try {
@@ -236,7 +233,7 @@
 
                 if (error || !data) {
                     showToast('שם משתמש או סיסמה שגויים', 'error');
-                    return false;
+                    return;
                 }
 
                 currentAgent = data;
@@ -247,8 +244,7 @@
                 showToast('שגיאת התחברות', 'error');
                 console.error(err);
             }
-            return false;
-        });
+        }
 
         function showAgentDashboard() {
             document.getElementById('loginScreen').classList.add('hidden');
