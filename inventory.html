@@ -146,22 +146,22 @@
                 let stat1 = 0;
                 (products || []).forEach(p => { stat1 += parseInt(p.quantity) || 0; });
 
-                // 2. יציאה מהזמנות - SUM של כמות מטבלת orders
-                const { data: orders } = await supabaseClient.from('orders').select('quantity');
+                // 2. יציאה מהזמנות - SUM של כמות מטבלת order_items
+                const { data: orderItems } = await supabaseClient.from('order_items').select('quantity');
                 let stat2 = 0;
-                (orders || []).forEach(o => { stat2 += parseInt(o.quantity) || 0; });
+                (orderItems || []).forEach(o => { stat2 += parseInt(o.quantity) || 0; });
 
                 // 3. חזרה מת.זיכוי - SUM מטבלת credit_notes
                 const { data: credits } = await supabaseClient.from('credit_notes').select('quantity');
                 let stat3 = 0;
                 (credits || []).forEach(c => { stat3 += parseInt(c.quantity) || 0; });
 
-                // 4. יציאה לסוכנים - SUM מטבלת agent_inventory (העברות החוצה)
+                // 4. יציאה לסוכנים - SUM מטבלת agent_inventory
                 const { data: agentOut } = await supabaseClient.from('agent_inventory').select('quantity');
                 let stat4 = 0;
                 (agentOut || []).forEach(a => { stat4 += parseInt(a.quantity) || 0; });
 
-                // 5. חזרה מסוכנים - SUM מטבלת agent_returns או שדה החזרות
+                // 5. חזרה מסוכנים - SUM מטבלת agent_returns
                 const { data: agentReturns } = await supabaseClient.from('agent_returns').select('quantity');
                 let stat5 = 0;
                 (agentReturns || []).forEach(r => { stat5 += parseInt(r.quantity) || 0; });
