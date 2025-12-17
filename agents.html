@@ -44,7 +44,7 @@
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן סיסמה">
                 </div>
-                <button id="loginBtn" type="button" onclick="alert('test'); handleLogin();" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90 active:opacity-75" style="cursor:pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.1);">
+                <button id="loginBtn" type="button" ontouchstart="document.activeElement.blur();" onclick="handleLogin();" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90 active:opacity-75" style="cursor:pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.1);">
                     🔐 התחבר
                 </button>
             </div>
@@ -229,19 +229,13 @@
         // Login function
         async function handleLogin() {
             try {
-                alert('שלב 1 - התחלה');
-                
                 const username = document.getElementById('loginUsername').value.trim();
                 const password = document.getElementById('loginPassword').value.trim();
-                
-                alert('שלב 2 - יוזר: ' + username);
                 
                 if (!username || !password) {
                     showToast('הזן שם משתמש וסיסמה', 'error');
                     return;
                 }
-
-                alert('שלב 3 - לפני supabase');
 
                 const { data, error } = await supabase
                     .from('agents')
@@ -249,8 +243,6 @@
                     .eq('username', username)
                     .eq('password', password)
                     .single();
-
-                alert('שלב 4 - אחרי supabase: ' + JSON.stringify(data));
 
                 if (error || !data) {
                     showToast('שם משתמש או סיסמה שגויים', 'error');
@@ -262,7 +254,7 @@
                 showAgentDashboard();
                 showToast(`ברוך הבא, ${data.name}!`);
             } catch (err) {
-                alert('שגיאה: ' + err.message);
+                showToast('שגיאת התחברות: ' + err.message, 'error');
             }
         }
 
