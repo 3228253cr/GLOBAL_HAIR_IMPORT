@@ -187,9 +187,13 @@
         };
 
         async function findAgentId(username) {
-            const { data } = await supabase.from('agents').select('*').eq('username', username).single();
+            console.log('Looking for agent:', username);
+            const { data, error } = await supabase.from('agents').select('*').eq('username', username).single();
+            console.log('Agent data:', data);
+            console.log('Agent error:', error);
             if (data) {
                 currentAgent = data;
+                console.log('Current agent ID:', currentAgent.id);
             }
             loadAgentData();
         }
