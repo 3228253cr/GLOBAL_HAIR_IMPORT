@@ -18,41 +18,11 @@
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
         .nav-item:hover { background: rgba(255,255,255,0.1); }
         .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
-        .compact-table th, .compact-table td { padding: 8px 12px; white-space: nowrap; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); min-width: 150px; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="toastContainer"></div>
-
-    <!-- מודאל עדכון מלאי -->
-    <div id="modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="text-xl font-bold mb-4">📝 עדכון מלאי מחסן</h3>
-            <form onsubmit="saveInventoryUpdate(event)">
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-1 text-sm">סוג פעולה</label>
-                    <select id="updateType" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-                        <option value="add">הוספה למלאי (+)</option>
-                        <option value="remove">הפחתה ממלאי (-)</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-1 text-sm">כמות</label>
-                    <input type="number" id="updateQty" required min="1" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-1 text-sm">הערות</label>
-                    <input type="text" id="updateNotes" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-                </div>
-                <div class="flex gap-3">
-                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">שמור</button>
-                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500">ביטול</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- סרגל צד -->
     <aside class="sidebar bg-gray-800 shadow-xl">
@@ -91,43 +61,58 @@
     <!-- תוכן ראשי -->
     <div class="main-content">
         <main class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">📦 ניהול מלאי</h2>
-                <button onclick="openModal()" class="gold-gradient text-gray-900 px-4 py-2 rounded-lg font-bold hover:opacity-90 text-sm">+ עדכון מלאי</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">📦 ניהול מלאי</h2>
+
+            <!-- 6 משבצות סטטיסטיקות -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-8">
+                <!-- 1. כניסה מספקים -->
+                <div class="stat-card border-r-4 border-green-500">
+                    <p class="text-gray-500 text-sm mb-2">📥 כניסה מספקים</p>
+                    <p id="stat1" class="text-3xl font-bold text-green-600">0</p>
+                </div>
+                
+                <!-- 2. יציאה מהזמנות -->
+                <div class="stat-card border-r-4 border-red-500">
+                    <p class="text-gray-500 text-sm mb-2">📤 יציאה מהזמנות</p>
+                    <p id="stat2" class="text-3xl font-bold text-red-600">0</p>
+                </div>
+                
+                <!-- 3. חזרה מת.זיכוי -->
+                <div class="stat-card border-r-4 border-purple-500">
+                    <p class="text-gray-500 text-sm mb-2">↩️ חזרה מת.זיכוי</p>
+                    <p id="stat3" class="text-3xl font-bold text-purple-600">0</p>
+                </div>
+                
+                <!-- 4. יציאה לסוכנים -->
+                <div class="stat-card border-r-4 border-orange-500">
+                    <p class="text-gray-500 text-sm mb-2">🤝 יציאה לסוכנים</p>
+                    <p id="stat4" class="text-3xl font-bold text-orange-600">0</p>
+                </div>
+                
+                <!-- 5. חזרה מסוכנים -->
+                <div class="stat-card border-r-4 border-blue-500">
+                    <p class="text-gray-500 text-sm mb-2">🔄 חזרה מסוכנים</p>
+                    <p id="stat5" class="text-3xl font-bold text-blue-600">0</p>
+                </div>
+                
+                <!-- 6. סה"כ יתרת מלאי -->
+                <div class="stat-card border-r-4 border-yellow-500 bg-yellow-50">
+                    <p class="text-gray-500 text-sm mb-2">📊 סה"כ יתרת מלאי</p>
+                    <p id="stat6" class="text-3xl font-bold text-yellow-700">0</p>
+                </div>
             </div>
 
-            <!-- סטטיסטיקות -->
-            <div class="grid grid-cols-2 gap-4 mb-6 max-w-md">
-                <div class="bg-white rounded-xl shadow-md p-4">
-                    <p class="text-gray-500 text-xs">יתרת מלאי</p>
-                    <p id="totalStock" class="text-2xl font-bold text-blue-600">0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-md p-4">
-                    <p class="text-gray-500 text-xs">סה"כ נמכר</p>
-                    <p id="totalSold" class="text-2xl font-bold text-green-600">0</p>
-                </div>
+            <!-- נוסחה להצגה -->
+            <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+                <p class="text-gray-600 text-sm text-center">
+                    <strong>נוסחת חישוב:</strong> 
+                    יתרת מלאי = (כניסה מספקים + חזרה מת.זיכוי + חזרה מסוכנים) - (יציאה מהזמנות + יציאה לסוכנים)
+                </p>
             </div>
 
-            <!-- דוח תנועות -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden inline-block">
-                <div class="p-4 bg-gray-100 border-b">
-                    <h3 class="font-bold text-gray-700">📋 תנועות מלאי</h3>
-                </div>
-                <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
-                <div id="emptyMsg" class="p-8 text-center text-gray-500 hidden">אין תנועות מלאי</div>
-                <table id="movementsTable" class="compact-table hidden">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="text-right">תאריך</th>
-                            <th class="text-right">סוג פעולה</th>
-                            <th class="text-right">כמות</th>
-                            <th class="text-right">יתרה</th>
-                            <th class="text-right">הערות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
+            <!-- טעינה -->
+            <div id="loading" class="text-center text-gray-500 py-8">טוען נתונים...</div>
+
         </main>
     </div>
 
@@ -135,16 +120,6 @@
         const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
         let supabaseClient = null;
-        let movements = [];
-
-        const actionLabels = {
-            'purchase': '📥 כניסה מרכישות',
-            'order': '📤 יציאה מהזמנות',
-            'agent_out': '🤝 יציאה לסוכנים',
-            'agent_return': '↩️ חזרה מסוכנים',
-            'credit': '💰 זיכוי לקוחות',
-            'manual': '📝 עדכון מחסן'
-        };
 
         function showToast(msg, type = 'success') {
             const toast = document.createElement('div');
@@ -154,143 +129,63 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        function formatDate(d) { return d ? new Date(d).toLocaleDateString('he-IL') : ''; }
-        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-
         window.onload = function() {
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
             if (!isLoggedIn) { window.location.href = 'index.html'; return; }
             document.getElementById('welcomeUser').textContent = 'שלום, ' + (localStorage.getItem('username') || 'משתמש');
             if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                loadData();
+                loadInventoryData();
             }
         };
 
-        async function loadData() {
-            // טעינת מוצרים (כניסה למלאי)
-            const { data: products } = await supabaseClient.from('products').select('quantity, created_at');
-            
-            // טעינת הזמנות (יציאה מהמלאי)
-            const { data: orders } = await supabaseClient.from('orders').select('quantity, created_at');
-            
-            // טעינת תנועות ידניות
-            const { data: manualMovements } = await supabaseClient.from('inventory_movements').select('*').order('created_at', { ascending: false });
-            
-            // בניית רשימת תנועות
-            movements = [];
-            
-            // כניסות מרכישות
-            (products || []).forEach(p => {
-                movements.push({
-                    date: p.created_at,
-                    action_type: 'purchase',
-                    quantity: p.quantity || 0,
-                    notes: ''
-                });
-            });
-            
-            // יציאות מהזמנות
-            (orders || []).forEach(o => {
-                movements.push({
-                    date: o.created_at,
-                    action_type: 'order',
-                    quantity: -(o.quantity || 0),
-                    notes: ''
-                });
-            });
-            
-            // תנועות ידניות
-            (manualMovements || []).forEach(m => {
-                movements.push({
-                    date: m.created_at,
-                    action_type: m.action_type || 'manual',
-                    quantity: m.quantity || 0,
-                    notes: m.notes || ''
-                });
-            });
-            
-            // מיון לפי תאריך
-            movements.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            // חישוב סטטיסטיקות
-            let totalIn = 0, totalOut = 0;
-            movements.forEach(m => {
-                if (m.quantity > 0) totalIn += m.quantity;
-                else totalOut += Math.abs(m.quantity);
-            });
-            
-            document.getElementById('totalStock').textContent = (totalIn - totalOut).toLocaleString();
-            document.getElementById('totalSold').textContent = totalOut.toLocaleString();
-            
-            renderTable();
-        }
+        async function loadInventoryData() {
+            try {
+                // 1. כניסה מספקים - SUM של כמות מטבלת products
+                const { data: products } = await supabaseClient.from('products').select('quantity');
+                let stat1 = 0;
+                (products || []).forEach(p => { stat1 += parseInt(p.quantity) || 0; });
 
-        function renderTable() {
-            document.getElementById('loading').classList.add('hidden');
-            if (movements.length === 0) {
-                document.getElementById('emptyMsg').classList.remove('hidden');
-                return;
-            }
-            
-            document.getElementById('movementsTable').classList.remove('hidden');
-            
-            // חישוב יתרה
-            let balance = 0;
-            const sortedForBalance = [...movements].reverse();
-            const balances = [];
-            sortedForBalance.forEach(m => {
-                balance += m.quantity;
-                balances.push(balance);
-            });
-            balances.reverse();
-            
-            document.getElementById('tableBody').innerHTML = movements.map((m, i) => {
-                const label = actionLabels[m.action_type] || m.action_type;
-                const qtyClass = m.quantity > 0 ? 'text-green-600' : 'text-red-600';
-                const prefix = m.quantity > 0 ? '+' : '';
-                return '<tr class="' + (i % 2 === 0 ? 'bg-white' : 'bg-gray-50') + ' hover:bg-yellow-50">' +
-                    '<td>' + formatDate(m.date) + '</td>' +
-                    '<td>' + label + '</td>' +
-                    '<td class="' + qtyClass + ' font-bold">' + prefix + m.quantity + '</td>' +
-                    '<td class="font-bold">' + balances[i] + '</td>' +
-                    '<td class="text-gray-500">' + (m.notes || '-') + '</td>' +
-                '</tr>';
-            }).join('');
-        }
+                // 2. יציאה מהזמנות - SUM של כמות מטבלת orders
+                const { data: orders } = await supabaseClient.from('orders').select('quantity');
+                let stat2 = 0;
+                (orders || []).forEach(o => { stat2 += parseInt(o.quantity) || 0; });
 
-        async function saveInventoryUpdate(e) {
-            e.preventDefault();
-            const type = document.getElementById('updateType').value;
-            const qty = parseInt(document.getElementById('updateQty').value);
-            const notes = document.getElementById('updateNotes').value;
-            
-            const finalQty = type === 'add' ? qty : -qty;
-            
-            const { error } = await supabaseClient.from('inventory_movements').insert([{
-                action_type: 'manual',
-                quantity: finalQty,
-                notes: notes
-            }]);
-            
-            if (error) {
-                showToast('שגיאה: ' + error.message, 'error');
-                return;
+                // 3. חזרה מת.זיכוי - SUM מטבלת credit_notes
+                const { data: credits } = await supabaseClient.from('credit_notes').select('quantity');
+                let stat3 = 0;
+                (credits || []).forEach(c => { stat3 += parseInt(c.quantity) || 0; });
+
+                // 4. יציאה לסוכנים - SUM מטבלת agent_inventory (העברות החוצה)
+                const { data: agentOut } = await supabaseClient.from('agent_inventory').select('quantity');
+                let stat4 = 0;
+                (agentOut || []).forEach(a => { stat4 += parseInt(a.quantity) || 0; });
+
+                // 5. חזרה מסוכנים - SUM מטבלת agent_returns או שדה החזרות
+                const { data: agentReturns } = await supabaseClient.from('agent_returns').select('quantity');
+                let stat5 = 0;
+                (agentReturns || []).forEach(r => { stat5 += parseInt(r.quantity) || 0; });
+
+                // 6. סה"כ יתרת מלאי = (1 + 3 + 5) - (2 + 4)
+                let stat6 = (stat1 + stat3 + stat5) - (stat2 + stat4);
+
+                // עדכון התצוגה
+                document.getElementById('stat1').textContent = stat1.toLocaleString();
+                document.getElementById('stat2').textContent = stat2.toLocaleString();
+                document.getElementById('stat3').textContent = stat3.toLocaleString();
+                document.getElementById('stat4').textContent = stat4.toLocaleString();
+                document.getElementById('stat5').textContent = stat5.toLocaleString();
+                document.getElementById('stat6').textContent = stat6.toLocaleString();
+
+                document.getElementById('loading').classList.add('hidden');
+
+            } catch (error) {
+                console.error('שגיאה בטעינת נתוני מלאי:', error);
+                document.getElementById('loading').textContent = 'שגיאה בטעינת נתונים';
             }
-            
-            showToast('המלאי עודכן!');
-            closeModal();
-            document.getElementById('updateQty').value = '';
-            document.getElementById('updateNotes').value = '';
-            loadData();
         }
 
         function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
-        
-        document.getElementById('modal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
     </script>
 </body>
 </html>
