@@ -32,7 +32,7 @@
                         <p class="text-sm text-gray-700">שלום, <span id="agentName">סוכן</span></p>
                     </div>
                 </div>
-                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
                     🚪 התנתק
                 </button>
             </div>
@@ -168,6 +168,9 @@
 
         // בדיקת התחברות בטעינה
         window.onload = function() {
+            // כפתור התנתקות
+            document.getElementById('logoutBtn').onclick = logout;
+            
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
             if (!isLoggedIn) {
                 // לא מחובר - חזור לדף ההתחברות
