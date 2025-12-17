@@ -31,20 +31,20 @@
                 <p class="text-gray-500">Global Imports - Premium Hair Supply</p>
             </div>
             
-            <form id="loginForm" class="space-y-4" onsubmit="return false;">
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
-                    <input type="text" id="loginUsername" autocomplete="off"
+                    <input type="text" id="loginUsername" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן שם משתמש">
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                    <input type="password" id="loginPassword" autocomplete="off"
+                    <input type="password" id="loginPassword" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן סיסמה">
                 </div>
-                <button type="button" onclick="doLogin()" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90">
+                <button type="submit" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90">
                     🔐 התחבר
                 </button>
             </form>
@@ -214,7 +214,9 @@
         }
 
         // Login function
-        async function doLogin() {
+        async function handleLogin(event) {
+            event.preventDefault();
+            
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             
