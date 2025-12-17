@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>פורטל סוכנים - דשבורד</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Heebo', sans-serif; }
+        .gold-header { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 8px; color: white; font-weight: bold; z-index: 9999; }
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="toastContainer"></div>
+
+    <!-- Header -->
+    <header class="gold-header shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-10 h-10 object-contain">
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">פורטל סוכנים</h1>
+                    <p class="text-sm text-gray-700">שלום, <span id="agentName"></span></p>
+                </div>
+            </div>
+            <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                🚪 התנתק
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <!-- סטטיסטיקות -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="card p-4 border-r-4 border-blue-500">
+                <p class="text-gray-500 text-xs">📦 מלאי שלי</p>
+                <p class="text-2xl font-bold text-blue-600" id="statInventory">0</p>
+                <p class="text-xs text-gray-400">גרם</p>
+            </div>
+            <div class="card p-4 border-r-4 border-green-500">
+                <p class="text-gray-500 text-xs">✅ נמכר</p>
+                <p class="text-2xl font-bold text-green-600" id="statSold">0</p>
+                <p class="text-xs text-gray-400">גרם</p>
+            </div>
+            <div class="card p-4 border-r-4 border-purple-500">
+                <p class="text-gray-500 text-xs">💵 מחיר ליחידה</p>
+                <p class="text-2xl font-bold text-purple-600" id="statPrice">$0</p>
+            </div>
+            <div class="card p-4 border-r-4 border-red-500">
+                <p class="text-gray-500 text-xs">💰 לתשלום</p>
+                <p class="text-2xl font-bold text-red-600" id="statOwed">$0</p>
+            </div>
+        </div>
+
+        <!-- מכירה חדשה -->
+        <div class="card p-4 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">📝 רישום מכירה</h2>
+                <button id="toggleSaleBtn" class="bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-bold">
+                    ➕ מכירה חדשה
+                </button>
+            </div>
+
+            <div id="saleForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-gray-700 text-sm mb-1">תאריך</label>
+                        <input type="date" id="saleDate" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm mb-1">שם לקוח</label>
+                        <input type="text" id="customerName" class="w-full px-3 py-2 border rounded-lg" placeholder="שם הלקוח">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm mb-1">כמות (גרם)</label>
+                        <input type="number" id="saleQty" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm mb-1">מחיר לגרם ($)</label>
+                        <input type="number" step="0.01" id="salePrice" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-gray-700 text-sm mb-1">הערות</label>
+                    <input type="text" id="saleNotes" class="w-full px-3 py-2 border rounded-lg" placeholder="אופציונלי">
+                </div>
+                <div class="flex gap-2">
+                    <button id="saveSaleBtn" class="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold">💾 שמור</button>
+                    <button id="cancelSaleBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg font-bold">ביטול</button>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-gray-700 mb-2">היסטוריית מכירות</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-2 py-2 text-right">תאריך</th>
+                            <th class="px-2 py-2 text-right">לקוח</th>
+                            <th class="px-2 py-2 text-right">כמות</th>
+                            <th class="px-2 py-2 text-right">סה"כ</th>
+                            <th class="px-2 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- מלאי שהתקבל -->
+        <div class="card p-4">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">📥 מלאי שהתקבל</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-2 py-2 text-right">תאריך</th>
+                            <th class="px-2 py-2 text-right">כמות</th>
+                            <th class="px-2 py-2 text-right">מחיר</th>
+                            <th class="px-2 py-2 text-right">סה"כ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let agent = null;
+
+        // בדיקת התחברות
+        const saved = localStorage.getItem('agent');
+        if (!saved) {
+            window.location.href = 'agents-login.html';
+        } else {
+            agent = JSON.parse(saved);
+            document.getElementById('agentName').textContent = agent.name;
+            document.getElementById('saleDate').valueAsDate = new Date();
+            loadAll();
+        }
+
+        // כפתורים
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('agent');
+            window.location.href = 'agents-login.html';
+        });
+
+        document.getElementById('toggleSaleBtn').addEventListener('click', function() {
+            document.getElementById('saleForm').classList.remove('hidden');
+            this.classList.add('hidden');
+        });
+
+        document.getElementById('cancelSaleBtn').addEventListener('click', function() {
+            document.getElementById('saleForm').classList.add('hidden');
+            document.getElementById('toggleSaleBtn').classList.remove('hidden');
+        });
+
+        document.getElementById('saveSaleBtn').addEventListener('click', saveSale);
+
+        // טעינת כל הנתונים
+        async function loadAll() {
+            await loadStats();
+            await loadSales();
+            await loadInventory();
+        }
+
+        // סטטיסטיקות
+        async function loadStats() {
+            const { data: inv } = await supabase.from('agent_inventory').select('quantity_received, total_expected').eq('agent_id', agent.id);
+            const { data: sales } = await supabase.from('agent_sales').select('quantity_sold').eq('agent_id', agent.id);
+
+            let received = 0, expected = 0, sold = 0;
+            if (inv) inv.forEach(i => { received += Number(i.quantity_received) || 0; expected += Number(i.total_expected) || 0; });
+            if (sales) sales.forEach(s => { sold += Number(s.quantity_sold) || 0; });
+
+            document.getElementById('statInventory').textContent = (received - sold).toLocaleString();
+            document.getElementById('statSold').textContent = sold.toLocaleString();
+            document.getElementById('statPrice').textContent = '$' + (received > 0 ? (expected / received).toFixed(2) : '0.00');
+            document.getElementById('statOwed').textContent = '$' + expected.toFixed(2);
+        }
+
+        // מכירות
+        async function loadSales() {
+            const { data } = await supabase.from('agent_sales').select('*').eq('agent_id', agent.id).order('sale_date', { ascending: false });
+            const tbody = document.getElementById('salesTable');
+            
+            if (!data || !data.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">אין מכירות</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(s => `
+                <tr class="border-b">
+                    <td class="px-2 py-2">${new Date(s.sale_date).toLocaleDateString('he-IL')}</td>
+                    <td class="px-2 py-2">${s.customer_name}</td>
+                    <td class="px-2 py-2">${s.quantity_sold}</td>
+                    <td class="px-2 py-2 text-green-600 font-bold">$${Number(s.total_amount).toFixed(2)}</td>
+                    <td class="px-2 py-2"><button onclick="deleteSale('${s.id}')" class="text-red-500">🗑️</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // מלאי
+        async function loadInventory() {
+            const { data } = await supabase.from('agent_inventory').select('*').eq('agent_id', agent.id).order('date_received', { ascending: false });
+            const tbody = document.getElementById('inventoryTable');
+            
+            if (!data || !data.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400">אין מלאי</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(i => `
+                <tr class="border-b">
+                    <td class="px-2 py-2">${new Date(i.date_received).toLocaleDateString('he-IL')}</td>
+                    <td class="px-2 py-2 text-blue-600 font-bold">${Number(i.quantity_received).toLocaleString()} גרם</td>
+                    <td class="px-2 py-2">$${Number(i.expected_price_per_unit).toFixed(2)}</td>
+                    <td class="px-2 py-2 text-red-600 font-bold">$${Number(i.total_expected).toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // שמירת מכירה
+        async function saveSale() {
+            const customer = document.getElementById('customerName').value.trim();
+            const qty = parseFloat(document.getElementById('saleQty').value) || 0;
+            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const date = document.getElementById('saleDate').value;
+            const notes = document.getElementById('saleNotes').value.trim();
+
+            if (!customer || qty <= 0) {
+                showToast('נא למלא שם לקוח וכמות', 'error');
+                return;
+            }
+
+            const { error } = await supabase.from('agent_sales').insert({
+                agent_id: agent.id,
+                customer_name: customer,
+                quantity_sold: qty,
+                price_per_unit: price,
+                total_amount: qty * price,
+                sale_date: date,
+                notes: notes
+            });
+
+            if (error) {
+                showToast('שגיאה בשמירה', 'error');
+                return;
+            }
+
+            showToast('המכירה נשמרה!', 'success');
+            document.getElementById('customerName').value = '';
+            document.getElementById('saleQty').value = '';
+            document.getElementById('salePrice').value = '';
+            document.getElementById('saleNotes').value = '';
+            document.getElementById('saleForm').classList.add('hidden');
+            document.getElementById('toggleSaleBtn').classList.remove('hidden');
+            loadAll();
+        }
+
+        // מחיקת מכירה
+        async function deleteSale(id) {
+            if (!confirm('למחוק?')) return;
+            await supabase.from('agent_sales').delete().eq('id', id);
+            showToast('נמחק', 'success');
+            loadAll();
+        }
+
+        // Toast
+        function showToast(msg, type) {
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + type;
+            t.textContent = msg;
+            document.getElementById('toastContainer').appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
