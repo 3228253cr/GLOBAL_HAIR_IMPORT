@@ -10,23 +10,28 @@
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Heebo', sans-serif; }
         .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; }
         .toast.success { background: #10B981; }
         .toast.error { background: #EF4444; }
-        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-            .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
         .main-content { margin-right: 200px; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
         .nav-item:hover { background: rgba(255,255,255,0.1); }
         .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .compact-table th, .compact-table td { padding: 8px 12px; white-space: nowrap; }
+        .icon-btn { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .icon-btn:hover { transform: scale(1.1); }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="toastContainer"></div>
 
-    <!-- סרגל צד קבוע -->
+    <!-- סרגל צד -->
     <aside class="sidebar bg-gray-800 shadow-xl">
         <div class="p-4 border-b border-gray-700">
             <div class="flex items-center gap-3">
@@ -39,57 +44,23 @@
         </div>
         
         <nav class="py-4">
-            <a href="dashboard.html" class="nav-item">
-                <span>📊</span>
-                <span>דשבורד</span>
-            </a>
-            <a href="suppliers.html" class="nav-item">
-                <span>🏭</span>
-                <span>ספקים</span>
-            </a>
-            <a href="trips.html" class="nav-item">
-                <span>✈️</span>
-                <span>נסיעות</span>
-            </a>
-            <a href="products.html" class="nav-item">
-                <span>📦</span>
-                <span>מוצרים</span>
-            </a>
-            <a href="customers.html" class="nav-item">
-                <span>👥</span>
-                <span>לקוחות</span>
-            </a>
-            <a href="orders.html" class="nav-item">
-                <span>📋</span>
-                <span>הזמנות</span>
-            </a>
-            <a href="invoices.html" class="nav-item active">
-                <span>🧾</span>
-                <span>חשבוניות</span>
-            </a>
-            <a href="inventory.html" class="nav-item">
-                <span>📦</span>
-                <span>מלאי</span>
-            </a>
-            <a href="agents-management.html" class="nav-item">
-                <span>🤝</span>
-                <span>סוכנים</span>
-            </a>
-            <a href="reports.html" class="nav-item">
-                <span>📈</span>
-                <span>דוחות</span>
-            </a>
-            <a href="maintenance.html" class="nav-item">
-                <span>⚙️</span>
-                <span>תחזוקה</span>
-            </a>
+            <a href="dashboard.html" class="nav-item"><span>📊</span><span>דשבורד</span></a>
+            <a href="suppliers.html" class="nav-item"><span>🏭</span><span>ספקים</span></a>
+            <a href="trips.html" class="nav-item"><span>✈️</span><span>נסיעות</span></a>
+            <a href="products.html" class="nav-item"><span>📦</span><span>מוצרים</span></a>
+            <a href="customers.html" class="nav-item"><span>👥</span><span>לקוחות</span></a>
+            <a href="orders.html" class="nav-item"><span>📋</span><span>הזמנות</span></a>
+            <a href="invoices.html" class="nav-item active"><span>🧾</span><span>חשבוניות</span></a>
+            <a href="inventory.html" class="nav-item"><span>📦</span><span>מלאי</span></a>
+            <a href="agents-management.html" class="nav-item"><span>🤝</span><span>סוכנים</span></a>
+            <a href="reports.html" class="nav-item"><span>📈</span><span>דוחות</span></a>
+            <a href="maintenance.html" class="nav-item"><span>⚙️</span><span>תחזוקה</span></a>
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
             <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
-            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
-                <span>🚪</span>
-                <span>התנתק</span>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
+                <span>🚪</span><span>התנתק</span>
             </button>
         </div>
     </aside>
@@ -97,35 +68,65 @@
     <!-- תוכן ראשי -->
     <div class="main-content">
         <main class="p-8">
-
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h2 class="text-3xl font-bold text-gray-800">ניהול חשבוניות</h2>
-                <p class="text-gray-500">חשבוניות מופקות מדף ההזמנות</p>
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">🧾 ניהול חשבוניות</h2>
+                    <p class="text-gray-500 text-sm">חשבוניות מופקות מדף ההזמנות</p>
+                </div>
+                <a href="orders.html" class="gold-gradient text-white px-4 py-2 rounded-lg hover:opacity-90 text-sm">
+                    → עבור להזמנות
+                </a>
             </div>
-            <a href="orders.html" class="gold-gradient text-white px-6 py-3 rounded-xl hover:opacity-90 transition shadow-lg">
-                → עבור להזמנות להפקת חשבונית
-            </a>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
-            <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין חשבוניות במערכת</div>
-            <table id="invoicesTable" class="w-full hidden">
-                <thead class="bg-gray-800 text-white">
-                    <tr>
-                        <th class="px-6 py-4 text-right">מספר</th>
-                        <th class="px-6 py-4 text-right">לקוח</th>
-                        <th class="px-6 py-4 text-right">תאריך</th>
-                        <th class="px-6 py-4 text-right">סכום</th>
-                        <th class="px-6 py-4 text-right">סטטוס</th>
-                        <th class="px-6 py-4 text-center">פעולות</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-                        </main>
+            <!-- סינון -->
+            <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">מיון לפי:</label>
+                        <select id="sortBy" onchange="applyFilters()" class="border rounded-lg px-3 py-2 text-sm w-32">
+                            <option value="number">מס' חשבונית</option>
+                            <option value="customer">שם לקוח</option>
+                            <option value="date">תאריך</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">לקוח:</label>
+                        <select id="filterCustomer" onchange="applyFilters()" class="border rounded-lg px-3 py-2 text-sm w-40">
+                            <option value="">כל הלקוחות</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">מתאריך:</label>
+                        <input type="date" id="dateFrom" onchange="applyFilters()" class="border rounded-lg px-2 py-2 text-sm w-32">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">עד תאריך:</label>
+                        <input type="date" id="dateTo" onchange="applyFilters()" class="border rounded-lg px-2 py-2 text-sm w-32">
+                    </div>
+                    <button onclick="clearFilters()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">נקה</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden inline-block">
+                <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+                <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין חשבוניות במערכת</div>
+                <table id="invoicesTable" class="compact-table hidden">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="text-right">מס' חשבונית</th>
+                            <th class="text-right">לקוח</th>
+                            <th class="text-right">תאריך</th>
+                            <th class="text-right">סכום</th>
+                            <th class="text-right">סטטוס</th>
+                            <th class="text-center">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div id="printArea" class="hidden"></div>
+        </main>
     </div>
 
     <script>
@@ -133,63 +134,137 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
         let supabaseClient = null;
         let invoices = [];
+        let allInvoices = [];
+        let customers = [];
 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
+        function showToast(msg, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
+            toast.className = 'toast ' + type;
+            toast.textContent = msg;
+            document.getElementById('toastContainer').appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
 
         window.onload = function() {
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
             if (!isLoggedIn) { window.location.href = 'index.html'; return; }
-            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
-            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + (localStorage.getItem('username') || 'משתמש');
             if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                loadInvoices();
+                loadData();
             }
         };
 
-        async function loadInvoices() {
-            document.getElementById('loading').classList.remove('hidden');
-            const { data, error } = await supabaseClient.from('invoices').select('*, customers(company_name)').order('invoice_date', { ascending: false });
-            if (error) { document.getElementById('loading').textContent = 'שגיאה: ' + error.message; return; }
-            invoices = data || [];
+        async function loadData() {
+            const [invResult, custResult] = await Promise.all([
+                supabaseClient.from('invoices').select('*, customers(company_name)').order('invoice_date', { ascending: false }),
+                supabaseClient.from('customers').select('id, company_name').order('company_name')
+            ]);
+            
+            allInvoices = invResult.data || [];
+            invoices = [...allInvoices];
+            customers = custResult.data || [];
+            
+            // מילוי רשימת לקוחות
+            const select = document.getElementById('filterCustomer');
+            customers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.company_name;
+                select.appendChild(opt);
+            });
+            
             renderTable();
         }
 
         function getStatusBadge(status) {
-            const colors = { 'ממתין לתשלום': 'bg-yellow-100 text-yellow-800', 'שולם חלקית': 'bg-blue-100 text-blue-800', 'שולם במלואו': 'bg-green-100 text-green-800' };
-            return `<span class="px-3 py-1 rounded-full text-sm font-medium ${colors[status] || 'bg-gray-100'}">${status || ''}</span>`;
+            const colors = { 
+                'ממתין לתשלום': 'bg-yellow-100 text-yellow-800', 
+                'שולם חלקית': 'bg-blue-100 text-blue-800', 
+                'שולם במלואו': 'bg-green-100 text-green-800' 
+            };
+            return '<span class="px-2 py-1 rounded-full text-xs font-medium ' + (colors[status] || 'bg-gray-100') + '">' + (status || '') + '</span>';
+        }
+
+        function applyFilters() {
+            const sortBy = document.getElementById('sortBy').value;
+            const customerId = document.getElementById('filterCustomer').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            invoices = allInvoices.filter(inv => {
+                if (customerId && inv.customer_id !== customerId) return false;
+                if (dateFrom && inv.invoice_date < dateFrom) return false;
+                if (dateTo && inv.invoice_date > dateTo) return false;
+                return true;
+            });
+            
+            // מיון
+            invoices.sort((a, b) => {
+                if (sortBy === 'number') return (b.invoice_number || '').localeCompare(a.invoice_number || '');
+                if (sortBy === 'customer') return (a.customers?.company_name || '').localeCompare(b.customers?.company_name || '');
+                if (sortBy === 'date') return (b.invoice_date || '').localeCompare(a.invoice_date || '');
+                return 0;
+            });
+            
+            renderTable();
+        }
+
+        function clearFilters() {
+            document.getElementById('sortBy').value = 'number';
+            document.getElementById('filterCustomer').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            invoices = [...allInvoices];
+            renderTable();
         }
 
         function renderTable() {
             document.getElementById('loading').classList.add('hidden');
-            if (invoices.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
+            if (invoices.length === 0) { 
+                document.getElementById('emptyMessage').classList.remove('hidden'); 
+                document.getElementById('invoicesTable').classList.add('hidden');
+                return; 
+            }
+            document.getElementById('emptyMessage').classList.add('hidden');
             document.getElementById('invoicesTable').classList.remove('hidden');
-            document.getElementById('tableBody').innerHTML = invoices.map((inv, i) => `
-                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
-                    <td class="px-6 py-4 font-semibold">${inv.invoice_number || ''}</td>
-                    <td class="px-6 py-4">${inv.customers?.company_name || ''}</td>
-                    <td class="px-6 py-4">${inv.invoice_date || ''}</td>
-                    <td class="px-6 py-4 font-bold">₪${inv.total_amount || 0}</td>
-                    <td class="px-6 py-4">${getStatusBadge(inv.status)}</td>
-                    <td class="px-6 py-4"><div class="flex gap-2 justify-center">
-                        <button onclick="deleteInvoice('${inv.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
-                    </div></td>
-                </tr>
-            `).join('');
+            document.getElementById('tableBody').innerHTML = invoices.map((inv, i) => 
+                '<tr class="' + (i % 2 === 0 ? 'bg-white' : 'bg-gray-50') + ' hover:bg-yellow-50">' +
+                    '<td class="font-semibold">' + (inv.invoice_number || '') + '</td>' +
+                    '<td>' + (inv.customers?.company_name || '') + '</td>' +
+                    '<td>' + (inv.invoice_date || '') + '</td>' +
+                    '<td class="font-bold">₪' + (inv.total_amount || 0) + '</td>' +
+                    '<td>' + getStatusBadge(inv.status) + '</td>' +
+                    '<td><div class="flex gap-1 justify-center">' +
+                        '<span onclick="viewInvoice(\'' + inv.id + '\')" class="icon-btn bg-blue-100 text-blue-600" title="צפייה">👁️</span>' +
+                        '<span onclick="printInvoice(\'' + inv.id + '\')" class="icon-btn bg-green-100 text-green-600" title="הדפסה">🖨️</span>' +
+                    '</div></td>' +
+                '</tr>'
+            ).join('');
         }
 
-        async function deleteInvoice(id) { 
-            if (!confirm('למחוק את החשבונית?')) return; 
-            await supabaseClient.from('invoices').delete().eq('id', id); 
-            showToast('החשבונית נמחקה'); 
-            loadInvoices(); 
+        function viewInvoice(id) {
+            const inv = invoices.find(x => x.id === id);
+            if (inv) {
+                alert('חשבונית: ' + inv.invoice_number + '\nלקוח: ' + (inv.customers?.company_name || '') + '\nסכום: ₪' + inv.total_amount);
+            }
+        }
+
+        function printInvoice(id) {
+            const inv = invoices.find(x => x.id === id);
+            if (!inv) return;
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = '<div style="padding: 40px; font-family: Heebo, sans-serif; direction: rtl;">' +
+                '<h1 style="text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px;">חשבונית מס\' ' + inv.invoice_number + '</h1>' +
+                '<p><strong>לקוח:</strong> ' + (inv.customers?.company_name || '') + '</p>' +
+                '<p><strong>תאריך:</strong> ' + (inv.invoice_date || '') + '</p>' +
+                '<p><strong>סכום:</strong> ₪' + inv.total_amount + '</p>' +
+                '<p><strong>סטטוס:</strong> ' + (inv.status || '') + '</p>' +
+                '</div>';
+            printArea.classList.remove('hidden');
+            window.print();
+            printArea.classList.add('hidden');
         }
 
         function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }

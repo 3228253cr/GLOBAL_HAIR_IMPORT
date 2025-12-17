@@ -69,25 +69,27 @@
         <main class="p-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-6">🤝 ניהול סוכנים</h1>
 
-            <!-- סטטיסטיקות -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="card p-6 border-r-4 border-blue-500">
-                    <p class="text-gray-500 text-sm">👥 סוכנים פעילים</p>
-                    <p class="text-3xl font-bold text-blue-600" id="totalAgents">0</p>
-                </div>
-                <div class="card p-6 border-r-4 border-purple-500">
-                    <p class="text-gray-500 text-sm">📦 מלאי אצל סוכנים</p>
-                    <p class="text-3xl font-bold text-purple-600" id="totalInventoryAtAgents">0</p>
-                    <p class="text-xs text-gray-400">גרם</p>
-                </div>
-                <div class="card p-6 border-r-4 border-green-500">
-                    <p class="text-gray-500 text-sm">✅ נמכר ע"י סוכנים</p>
-                    <p class="text-3xl font-bold text-green-600" id="totalSoldByAgents">0</p>
-                    <p class="text-xs text-gray-400">גרם</p>
-                </div>
-                <div class="card p-6 border-r-4 border-red-500">
-                    <p class="text-gray-500 text-sm">💰 סה"כ חייבים</p>
-                    <p class="text-3xl font-bold text-red-600" id="totalOwedByAgents">$0</p>
+            <!-- סטטיסטיקות - חצי רוחב -->
+            <div class="max-w-3xl">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="card p-3 border-r-4 border-blue-500">
+                        <p class="text-gray-500 text-xs">👥 סוכנים פעילים</p>
+                        <p class="text-xl font-bold text-blue-600" id="totalAgents">0</p>
+                    </div>
+                    <div class="card p-3 border-r-4 border-purple-500">
+                        <p class="text-gray-500 text-xs">📦 מלאי אצל סוכנים</p>
+                        <p class="text-xl font-bold text-purple-600" id="totalInventoryAtAgents">0</p>
+                        <p class="text-xs text-gray-400">גרם</p>
+                    </div>
+                    <div class="card p-3 border-r-4 border-green-500">
+                        <p class="text-gray-500 text-xs">✅ נמכר ע"י סוכנים</p>
+                        <p class="text-xl font-bold text-green-600" id="totalSoldByAgents">0</p>
+                        <p class="text-xs text-gray-400">גרם</p>
+                    </div>
+                    <div class="card p-3 border-r-4 border-red-500">
+                        <p class="text-gray-500 text-xs">💰 סה"כ חייבים</p>
+                        <p class="text-xl font-bold text-red-600" id="totalOwedByAgents">$0</p>
+                    </div>
                 </div>
             </div>
 

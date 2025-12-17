@@ -275,12 +275,80 @@
                     <div class="text-2xl font-bold">
                         סה"כ: <span id="totalDisplay">$0.00</span>
                     </div>
-                    <div class="flex gap-4">
-                        <button type="submit" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">שמור</button>
-                        <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="submit" id="saveBtn" class="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700 transition">💾 שמור</button>
+                        <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-6 py-2 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                        <button type="button" onclick="confirmDeliveryNote()" class="bg-purple-500 text-white px-6 py-2 rounded-xl hover:bg-purple-600 transition">📄 ת.משלוח</button>
+                        <button type="button" onclick="confirmInvoice()" class="bg-blue-500 text-white px-6 py-2 rounded-xl hover:bg-blue-600 transition">🧾 חשבונית</button>
+                        <button type="button" onclick="openCreditModal()" class="bg-orange-500 text-white px-6 py-2 rounded-xl hover:bg-orange-600 transition">↩️ ח.זיכוי</button>
                     </div>
                 </div>
             </form>
+        </div>
+
+        <!-- מודאל אישור הפקת ת.משלוח -->
+        <div id="deliveryConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                <h3 class="text-xl font-bold mb-4 text-center">📄 הפקת תעודת משלוח</h3>
+                <p class="text-gray-600 mb-6 text-center">אתה עומד להפיק תעודת משלוח להזמנה זו. האם להמשיך?</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeliveryConfirm()" class="flex-1 bg-gray-400 text-white py-2 rounded-xl hover:bg-gray-500">לא</button>
+                    <button onclick="generateDeliveryNote()" class="flex-1 bg-purple-600 text-white py-2 rounded-xl hover:bg-purple-700">כן, הפק</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- מודאל אישור הפקת חשבונית -->
+        <div id="invoiceConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                <h3 class="text-xl font-bold mb-4 text-center">🧾 הפקת חשבונית</h3>
+                <p class="text-gray-600 mb-6 text-center">אתה עומד להפיק חשבונית להזמנה זו. האם להמשיך?</p>
+                <div class="flex gap-3">
+                    <button onclick="closeInvoiceConfirm()" class="flex-1 bg-gray-400 text-white py-2 rounded-xl hover:bg-gray-500">לא</button>
+                    <button onclick="generateInvoice()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700">כן, הפק</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- מודאל חשבונית זיכוי -->
+        <div id="creditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+                <h3 class="text-xl font-bold mb-4">↩️ חשבונית זיכוי</h3>
+                <p class="text-gray-600 mb-4">מס' הזמנה: <span id="creditOrderNumber" class="font-bold"></span></p>
+                
+                <div class="space-y-3 mb-4">
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <label class="block text-sm text-gray-600">סוג מוצר</label>
+                            <select id="creditProduct" class="w-full border rounded-lg px-2 py-2 text-sm">
+                                <option value="שיער">שיער</option>
+                                <option value="קצר">קצר</option>
+                                <option value="ארוך">ארוך</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600">כמות</label>
+                            <input type="number" id="creditQty" class="w-full border rounded-lg px-2 py-2 text-sm" oninput="calcCredit()">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600">מחיר ליח'</label>
+                            <input type="number" id="creditPrice" step="0.01" class="w-full border rounded-lg px-2 py-2 text-sm" oninput="calcCredit()">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600">סה"כ</label>
+                            <input type="text" id="creditTotal" readonly class="w-full border rounded-lg px-2 py-2 text-sm bg-gray-100 font-bold">
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-4">* הכמות תוחזר למלאי והסכום יורד מהיתרה</p>
+                
+                <div class="flex gap-2">
+                    <button onclick="closeCreditModal()" class="flex-1 bg-gray-400 text-white py-2 rounded-xl hover:bg-gray-500">ביטול</button>
+                    <button onclick="saveCreditNote()" class="flex-1 bg-green-600 text-white py-2 rounded-xl hover:bg-green-700">💾 שמור</button>
+                    <button onclick="confirmCreditInvoice()" class="flex-1 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600">🧾 הפק ח.זיכוי</button>
+                </div>
+            </div>
         </div>
 
         <!-- טבלת הזמנות -->
@@ -420,23 +488,26 @@
             document.getElementById('loading').classList.add('hidden');
             if (orders.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
             document.getElementById('ordersTable').classList.remove('hidden');
-            document.getElementById('tableBody').innerHTML = orders.map((o, i) => `
+            document.getElementById('tableBody').innerHTML = orders.map((o, i) => {
+                const hasDelivery = o.delivery_note_number ? 'bg-gray-400 cursor-default' : 'bg-purple-500 hover:bg-purple-600';
+                const hasInvoice = o.invoice_number ? 'bg-gray-400 cursor-default' : 'bg-green-500 hover:bg-green-600';
+                return `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
-                    <td class="px-4 py-4 font-semibold">${o.order_number || '-'}</td>
-                    <td class="px-4 py-4">${o.customers?.company_name || ''}</td>
-                    <td class="px-4 py-4">${o.order_date || ''}</td>
-                    <td class="px-4 py-4 font-bold">$${o.total_amount || 0}</td>
-                    <td class="px-4 py-4">${getStatusBadge(o.status)}</td>
-                    <td class="px-4 py-4">
-                        <div class="flex gap-1 justify-center flex-wrap">
-                            <button onclick="editOrder('${o.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">עריכה</button>
-                            <button onclick="printDeliveryNote('${o.id}')" class="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600">ת.משלוח</button>
-                            <button onclick="createInvoice('${o.id}')" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">חשבונית</button>
-                            <button onclick="deleteOrder('${o.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">מחיקה</button>
+                    <td class="px-3 py-2 font-semibold">${o.order_number || '-'}</td>
+                    <td class="px-3 py-2">${o.customers?.company_name || ''}</td>
+                    <td class="px-3 py-2">${o.order_date || ''}</td>
+                    <td class="px-3 py-2 font-bold">$${o.total_amount || 0}</td>
+                    <td class="px-3 py-2">${getStatusBadge(o.status)}</td>
+                    <td class="px-3 py-2">
+                        <div class="flex gap-1 justify-center items-center">
+                            <span onclick="editOrder('${o.id}')" class="w-7 h-7 rounded bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer hover:scale-110" title="עריכה">✏️</span>
+                            <span onclick="deleteOrder('${o.id}')" class="w-7 h-7 rounded bg-red-100 text-red-600 flex items-center justify-center cursor-pointer hover:scale-110" title="מחיקה">🗑️</span>
+                            <span class="text-xs px-2 py-1 rounded ${hasDelivery} text-white">${o.delivery_note_number ? 'ת.מ ✓' : 'ת.משלוח'}</span>
+                            <span class="text-xs px-2 py-1 rounded ${hasInvoice} text-white">${o.invoice_number ? 'ח-ת ✓' : 'חשבונית'}</span>
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         // ניהול פריטי הזמנה
@@ -1131,6 +1202,125 @@
         }
 
         function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+
+        // פונקציות הפקת ת.משלוח
+        function confirmDeliveryNote() {
+            document.getElementById('deliveryConfirmModal').classList.remove('hidden');
+        }
+        function closeDeliveryConfirm() {
+            document.getElementById('deliveryConfirmModal').classList.add('hidden');
+        }
+        async function generateDeliveryNote() {
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) { showToast('יש לשמור את ההזמנה קודם', 'error'); return; }
+            
+            // קבלת מספר ת.משלוח הבא
+            const { data: lastDN } = await supabaseClient
+                .from('orders')
+                .select('delivery_note_number')
+                .not('delivery_note_number', 'is', null)
+                .order('delivery_note_number', { ascending: false })
+                .limit(1);
+            
+            let nextDN = 1000;
+            if (lastDN && lastDN.length > 0) {
+                const lastNum = parseInt(lastDN[0].delivery_note_number.split('-')[1]) || 999;
+                nextDN = lastNum + 1;
+            }
+            const dnNumber = `DN-${nextDN}`;
+            
+            // עדכון ההזמנה
+            await supabaseClient.from('orders').update({ delivery_note_number: dnNumber }).eq('id', orderId);
+            
+            closeDeliveryConfirm();
+            showToast('תעודת משלוח ' + dnNumber + ' הופקה!');
+            printDeliveryNote(orderId);
+            loadOrders();
+        }
+
+        // פונקציות הפקת חשבונית
+        function confirmInvoice() {
+            document.getElementById('invoiceConfirmModal').classList.remove('hidden');
+        }
+        function closeInvoiceConfirm() {
+            document.getElementById('invoiceConfirmModal').classList.add('hidden');
+        }
+        async function generateInvoice() {
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) { showToast('יש לשמור את ההזמנה קודם', 'error'); return; }
+            
+            closeInvoiceConfirm();
+            await createInvoice(orderId);
+            loadOrders();
+        }
+
+        // פונקציות חשבונית זיכוי
+        function openCreditModal() {
+            const orderId = document.getElementById('orderId').value;
+            const orderNum = document.getElementById('orderNumber').value;
+            if (!orderId) { showToast('יש לשמור את ההזמנה קודם', 'error'); return; }
+            document.getElementById('creditOrderNumber').textContent = orderNum;
+            document.getElementById('creditModal').classList.remove('hidden');
+        }
+        function closeCreditModal() {
+            document.getElementById('creditModal').classList.add('hidden');
+        }
+        function calcCredit() {
+            const qty = parseFloat(document.getElementById('creditQty').value) || 0;
+            const price = parseFloat(document.getElementById('creditPrice').value) || 0;
+            document.getElementById('creditTotal').value = '$' + (qty * price).toFixed(2);
+        }
+        async function saveCreditNote() {
+            const orderId = document.getElementById('orderId').value;
+            const qty = parseFloat(document.getElementById('creditQty').value) || 0;
+            const price = parseFloat(document.getElementById('creditPrice').value) || 0;
+            const total = qty * price;
+            
+            if (qty <= 0) { showToast('יש להזין כמות', 'error'); return; }
+            
+            // הוספת תנועת מלאי (החזרה)
+            await supabaseClient.from('inventory_movements').insert([{
+                action_type: 'credit',
+                quantity: qty,
+                notes: 'זיכוי מהזמנה ' + document.getElementById('orderNumber').value
+            }]);
+            
+            // הוספת רשומת זיכוי
+            await supabaseClient.from('credit_notes').insert([{
+                order_id: orderId,
+                quantity: qty,
+                unit_price: price,
+                total_amount: total
+            }]);
+            
+            showToast('הזיכוי נשמר! הכמות הוחזרה למלאי');
+            closeCreditModal();
+        }
+        async function confirmCreditInvoice() {
+            const qty = parseFloat(document.getElementById('creditQty').value) || 0;
+            if (qty <= 0) { showToast('יש להזין כמות', 'error'); return; }
+            
+            if (confirm('האם להפיק חשבונית זיכוי?')) {
+                await saveCreditNote();
+                
+                // קבלת מספר ח.זיכוי הבא (סדרה 2025-3000)
+                const { data: lastCredit } = await supabaseClient
+                    .from('credit_notes')
+                    .select('credit_number')
+                    .not('credit_number', 'is', null)
+                    .order('credit_number', { ascending: false })
+                    .limit(1);
+                
+                let nextCredit = 3000;
+                if (lastCredit && lastCredit.length > 0) {
+                    const lastNum = parseInt(lastCredit[0].credit_number.split('-')[1]) || 2999;
+                    nextCredit = lastNum + 1;
+                }
+                const creditNumber = `2025-${nextCredit}`;
+                
+                showToast('חשבונית זיכוי ' + creditNumber + ' הופקה!');
+            }
+        }
     </script>
 </body>
 </html>
