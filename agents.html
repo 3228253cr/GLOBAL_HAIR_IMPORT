@@ -34,14 +34,9 @@
                 <p class="text-gray-500">Global Imports - Premium Hair Supply</p>
             </div>
             
-            <div class="mb-4">
+            <div class="mb-8">
                 <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
                 <input type="text" id="loginUsername" class="input-field" placeholder="הזן שם משתמש" autocomplete="off" autocapitalize="off">
-            </div>
-            
-            <div class="mb-8">
-                <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                <input type="password" id="loginPassword" class="input-field" placeholder="הזן סיסמה" autocomplete="off">
             </div>
             
             <button id="loginBtn" class="login-btn gold-gradient text-gray-900" onclick="handleLogin();">
@@ -219,16 +214,15 @@
 
         // Login function
         async function handleLogin() {
+            alert('התחלת login');
+            
             const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
             
-            // הסתר הודעת שגיאה קודמת
-            errorMsg.classList.add('hidden');
+            alert('שם משתמש: ' + username);
             
-            if (!username || !password) {
-                errorMsg.textContent = 'הזן שם משתמש וסיסמה';
-                errorMsg.classList.remove('hidden');
+            if (!username) {
+                document.getElementById('errorMsg').textContent = 'הזן שם משתמש';
+                document.getElementById('errorMsg').classList.remove('hidden');
                 return;
             }
 
@@ -237,12 +231,13 @@
                     .from('agents')
                     .select('*')
                     .eq('username', username)
-                    .eq('password', password)
                     .single();
 
+                alert('תוצאה: ' + JSON.stringify(data));
+
                 if (error || !data) {
-                    errorMsg.textContent = 'שם משתמש או סיסמה שגויים';
-                    errorMsg.classList.remove('hidden');
+                    document.getElementById('errorMsg').textContent = 'שם משתמש שגוי';
+                    document.getElementById('errorMsg').classList.remove('hidden');
                     return;
                 }
 
@@ -251,8 +246,7 @@
                 showAgentDashboard();
                 showToast('ברוך הבא, ' + data.name + '!');
             } catch (err) {
-                errorMsg.textContent = 'שגיאת התחברות';
-                errorMsg.classList.remove('hidden');
+                alert('שגיאה: ' + err.message);
             }
         }
 
