@@ -443,7 +443,7 @@
             const { error } = await supabase.from('agent_inventory').insert({
                 agent_id: agentId,
                 quantity_received: qty,
-                expected_price: price,
+                expected_price_per_unit: price,
                 total_expected: qty * price,
                 date_received: new Date().toISOString().split('T')[0],
                 notes
