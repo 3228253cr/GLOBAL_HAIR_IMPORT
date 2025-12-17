@@ -194,7 +194,7 @@
                 }
                 
                 // מעבר לדף הסוכנים
-                window.location.href = 'agents-dashboard.html';
+                window.location.href = 'agents.html';
             } else {
                 // הצגת שגיאה
                 errorMessage.classList.remove('hidden');
@@ -225,7 +225,7 @@
         // בדיקה אם כבר מחובר
         window.onload = function() {
             if (localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true') {
-                window.location.href = 'agents-dashboard.html';
+                window.location.href = 'agents.html';
             }
         };
     </script>

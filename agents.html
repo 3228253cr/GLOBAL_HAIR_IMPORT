@@ -2,14 +2,13 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>פורטל סוכנים - Global Imports</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap');
         body { font-family: 'Heebo', sans-serif; }
-        .login-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; }
         .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; padding: 12px 24px; border-radius: 8px; color: white; }
@@ -17,43 +16,13 @@
         .toast-error { background: #ef4444; }
         .stat-card { transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
-        .input-field { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; outline: none; }
-        .input-field:focus { border-color: #d4af37; }
-        .login-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="toastContainer"></div>
 
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-bg flex items-center justify-center p-4">
-        <div class="card p-8 w-full max-w-md">
-            <div class="text-center mb-8">
-                <img src="logo.jpeg" alt="Logo" class="w-24 h-24 mx-auto mb-4 object-contain">
-                <h1 class="text-2xl font-bold text-gray-800">פורטל סוכנים</h1>
-                <p class="text-gray-500">Global Imports - Premium Hair Supply</p>
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
-                <input type="text" id="loginUsername" class="input-field" placeholder="הזן שם משתמש" autocomplete="off" autocapitalize="off">
-            </div>
-            
-            <div class="mb-8">
-                <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                <input type="password" id="loginPassword" class="input-field" placeholder="הזן סיסמה" autocomplete="off">
-            </div>
-            
-            <button id="loginBtn" class="login-btn gold-gradient text-gray-900" onclick="handleLogin();">
-                🔐 התחבר
-            </button>
-            
-            <div id="errorMsg" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-center"></div>
-        </div>
-    </div>
-
     <!-- Agent Dashboard -->
-    <div id="agentDashboard" class="hidden min-h-screen">
+    <div id="agentDashboard" class="min-h-screen">
         <header class="gold-gradient shadow-lg">
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -197,8 +166,33 @@
 
         let currentAgent = null;
 
-        // בדיקת session קיים בטעינה
-        checkSession();
+        // בדיקת התחברות בטעינה
+        window.onload = function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) {
+                // לא מחובר - חזור לדף ההתחברות
+                window.location.href = 'agents-login.html';
+                return;
+            }
+            
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'סוכן';
+            document.getElementById('agentName').textContent = username;
+            document.getElementById('saleDate').valueAsDate = new Date();
+            
+            // יצירת אובייקט סוכן זמני
+            currentAgent = { id: null, name: username };
+            
+            // חיפוש ה-ID של הסוכן לפי שם המשתמש
+            findAgentId(username);
+        };
+
+        async function findAgentId(username) {
+            const { data } = await supabase.from('agents').select('*').eq('username', username).single();
+            if (data) {
+                currentAgent = data;
+            }
+            loadAgentData();
+        }
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -217,72 +211,19 @@
             return num ? num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
         }
 
-        // Login function - בודק מול טבלת users
-        async function handleLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
-            
-            errorMsg.classList.add('hidden');
-            
-            if (!username || !password) {
-                errorMsg.textContent = 'הזן שם משתמש וסיסמה';
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                // בדיקה מול טבלת users (כמו בדף הראשי)
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-
-                if (error || !data) {
-                    errorMsg.textContent = 'שם משתמש או סיסמה שגויים';
-                    errorMsg.classList.remove('hidden');
-                    return;
-                }
-
-                // שמירת הסשן
-                currentAgent = data;
-                localStorage.setItem('agentSession', JSON.stringify(data));
-                showAgentDashboard();
-                showToast('ברוך הבא, ' + (data.name || username) + '!');
-            } catch (err) {
-                errorMsg.textContent = 'שגיאת התחברות';
-                errorMsg.classList.remove('hidden');
-            }
-        }
-
-        function showAgentDashboard() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('agentDashboard').classList.remove('hidden');
-            document.getElementById('agentName').textContent = currentAgent.name;
-            document.getElementById('saleDate').valueAsDate = new Date();
-            loadAgentData();
-        }
-
         function logout() {
-            localStorage.removeItem('agentSession');
-            currentAgent = null;
-            document.getElementById('agentDashboard').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-        }
-
-        function checkSession() {
-            const session = localStorage.getItem('agentSession');
-            if (session) {
-                currentAgent = JSON.parse(session);
-                showAgentDashboard();
-            }
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('username');
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            window.location.href = 'agents-login.html';
         }
 
         async function loadAgentData() {
+            if (!currentAgent || !currentAgent.id) {
+                console.log('No agent ID found');
+                return;
+            }
             await loadInventoryStats();
             await loadSalesHistory();
             await loadInventoryHistory();
@@ -359,7 +300,7 @@
                 <tr class="border-b hover:bg-gray-50">
                     <td class="px-4 py-3">${formatDate(inv.date_received)}</td>
                     <td class="px-4 py-3 font-bold text-blue-600">${(inv.quantity_received || 0).toLocaleString()} גרם</td>
-                    <td class="px-4 py-3">$${formatNumber(inv.expected_price)}</td>
+                    <td class="px-4 py-3">$${formatNumber(inv.expected_price_per_unit)}</td>
                     <td class="px-4 py-3 font-bold text-red-600">$${formatNumber(inv.total_expected)}</td>
                     <td class="px-4 py-3 text-gray-500">${inv.notes || ''}</td>
                 </tr>
@@ -388,6 +329,11 @@
 
             if (!customerName || qty <= 0) {
                 showToast('נא למלא שם לקוח וכמות', 'error');
+                return;
+            }
+
+            if (!currentAgent || !currentAgent.id) {
+                showToast('לא נמצא סוכן מחובר', 'error');
                 return;
             }
 
