@@ -44,7 +44,7 @@
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן סיסמה">
                 </div>
-                <button type="button" onclick="handleLogin()" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90">
+                <button id="loginBtn" type="button" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90 active:opacity-75">
                     🔐 התחבר
                 </button>
             </div>
@@ -195,6 +195,19 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentAgent = null;
+
+        // חיבור כפתור ההתחברות
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', handleLogin);
+                loginBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    handleLogin();
+                });
+            }
+            checkSession();
+        });
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -425,8 +438,6 @@
             showToast('המכירה נמחקה');
             loadAgentData();
         }
-
-        checkSession();
     </script>
 </body>
 </html>
