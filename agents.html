@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>פורטל סוכנים - Global Imports</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,6 +17,9 @@
         .toast-error { background: #ef4444; }
         .stat-card { transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
+        .input-field { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; outline: none; }
+        .input-field:focus { border-color: #d4af37; }
+        .login-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -31,24 +34,21 @@
                 <p class="text-gray-500">Global Imports - Premium Hair Supply</p>
             </div>
             
-            <div id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
-                    <input type="text" id="loginUsername" name="username"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
-                           placeholder="הזן שם משתמש">
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                    <input type="password" id="loginPassword" name="password"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
-                           placeholder="הזן סיסמה">
-                </div>
-                <div class="pt-6"></div>
-                <button id="loginBtn" type="button" ontouchstart="document.activeElement.blur();" onclick="handleLogin();" class="w-full gold-gradient text-gray-900 font-bold py-3 rounded-lg hover:opacity-90 active:opacity-75" style="cursor:pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.1);">
-                    🔐 התחבר
-                </button>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
+                <input type="text" id="loginUsername" class="input-field" placeholder="הזן שם משתמש" autocomplete="off" autocapitalize="off">
             </div>
+            
+            <div class="mb-8">
+                <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
+                <input type="password" id="loginPassword" class="input-field" placeholder="הזן סיסמה" autocomplete="off">
+            </div>
+            
+            <button id="loginBtn" class="login-btn gold-gradient text-gray-900">
+                🔐 התחבר
+            </button>
+            
+            <div id="errorMsg" class="hidden mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-center"></div>
         </div>
     </div>
 
@@ -197,18 +197,14 @@
 
         let currentAgent = null;
 
-        // חיבור כפתור ההתחברות
-        document.addEventListener('DOMContentLoaded', function() {
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', handleLogin);
-                loginBtn.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    handleLogin();
-                });
-            }
+        // המתן לטעינת הדף
+        window.onload = function() {
+            // חיבור כפתור התחברות
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+            
+            // בדיקת session קיים
             checkSession();
-        });
+        };
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -229,15 +225,20 @@
 
         // Login function
         async function handleLogin() {
-            try {
-                const username = document.getElementById('loginUsername').value.trim();
-                const password = document.getElementById('loginPassword').value.trim();
-                
-                if (!username || !password) {
-                    showToast('הזן שם משתמש וסיסמה', 'error');
-                    return;
-                }
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            
+            // הסתר הודעת שגיאה קודמת
+            errorMsg.classList.add('hidden');
+            
+            if (!username || !password) {
+                errorMsg.textContent = 'הזן שם משתמש וסיסמה';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
 
+            try {
                 const { data, error } = await supabase
                     .from('agents')
                     .select('*')
@@ -246,16 +247,18 @@
                     .single();
 
                 if (error || !data) {
-                    showToast('שם משתמש או סיסמה שגויים', 'error');
+                    errorMsg.textContent = 'שם משתמש או סיסמה שגויים';
+                    errorMsg.classList.remove('hidden');
                     return;
                 }
 
                 currentAgent = data;
                 localStorage.setItem('agentSession', JSON.stringify(data));
                 showAgentDashboard();
-                showToast(`ברוך הבא, ${data.name}!`);
+                showToast('ברוך הבא, ' + data.name + '!');
             } catch (err) {
-                showToast('שגיאת התחברות: ' + err.message, 'error');
+                errorMsg.textContent = 'שגיאת התחברות';
+                errorMsg.classList.remove('hidden');
             }
         }
 
