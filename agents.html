@@ -200,7 +200,11 @@
         // המתן לטעינת הדף
         window.onload = function() {
             // חיבור כפתור התחברות
-            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+            var btn = document.getElementById('loginBtn');
+            btn.onclick = function() {
+                alert('כפתור עובד!');
+                handleLogin();
+            };
             
             // בדיקת session קיים
             checkSession();
