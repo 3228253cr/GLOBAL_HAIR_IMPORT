@@ -228,19 +228,21 @@
 
         // Login function
         async function handleLogin() {
-            alert('כפתור נלחץ!'); // בדיקה
-            
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            
-            console.log('Trying login:', username);
-            
-            if (!username || !password) {
-                showToast('הזן שם משתמש וסיסמה', 'error');
-                return;
-            }
-
             try {
+                alert('שלב 1 - התחלה');
+                
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                
+                alert('שלב 2 - יוזר: ' + username);
+                
+                if (!username || !password) {
+                    showToast('הזן שם משתמש וסיסמה', 'error');
+                    return;
+                }
+
+                alert('שלב 3 - לפני supabase');
+
                 const { data, error } = await supabase
                     .from('agents')
                     .select('*')
@@ -248,7 +250,7 @@
                     .eq('password', password)
                     .single();
 
-                console.log('Result:', data, error);
+                alert('שלב 4 - אחרי supabase: ' + JSON.stringify(data));
 
                 if (error || !data) {
                     showToast('שם משתמש או סיסמה שגויים', 'error');
@@ -260,8 +262,7 @@
                 showAgentDashboard();
                 showToast(`ברוך הבא, ${data.name}!`);
             } catch (err) {
-                showToast('שגיאת התחברות', 'error');
-                console.error(err);
+                alert('שגיאה: ' + err.message);
             }
         }
 
