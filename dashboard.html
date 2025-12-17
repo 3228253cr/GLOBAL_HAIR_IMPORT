@@ -60,6 +60,10 @@
                 <span>🧾</span>
                 <span>חשבוניות</span>
             </a>
+            <a href="inventory.html" class="nav-item">
+                <span>📦</span>
+                <span>מלאי</span>
+            </a>
             <a href="agents-management.html" class="nav-item">
                 <span>🤝</span>
                 <span>סוכנים</span>
@@ -86,82 +90,76 @@
     <!-- תוכן ראשי -->
     <div class="main-content">
         <main class="p-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-8">דשבורד ראשי</h2>
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">דשבורד ראשי</h2>
         
-        <!-- סטטיסטיקות -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">ספקים</p>
-                        <p id="suppliersCount" class="text-3xl font-bold text-gray-800">0</p>
+            <!-- סטטיסטיקות - חצי רוחב במרכז -->
+            <div class="max-w-3xl mx-auto">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs">ספקים</p>
+                                <p id="suppliersCount" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🏭</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <span class="text-2xl">🏭</span>
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs">מוצרים</p>
+                                <p id="productsCount" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">📦</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs">לקוחות</p>
+                                <p id="customersCount" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">👥</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-xs">הזמנות פתוחות</p>
+                                <p id="ordersCount" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">📋</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">מוצרים</p>
-                        <p id="productsCount" class="text-3xl font-bold text-gray-800">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                        <span class="text-2xl">📦</span>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">לקוחות</p>
-                        <p id="customersCount" class="text-3xl font-bold text-gray-800">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <span class="text-2xl">👥</span>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">הזמנות פתוחות</p>
-                        <p id="ordersCount" class="text-3xl font-bold text-gray-800">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                        <span class="text-2xl">📋</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- תוכן ראשי + פעולות מהירות -->
-        <div class="flex gap-6">
-            
-            <!-- תוכן ראשי -->
-            <div class="flex-1">
-                <!-- יתרות לגבייה -->
-                <div class="bg-white rounded-2xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">סיכום יתרות</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-blue-50 rounded-xl p-4 text-center">
-                            <p class="text-blue-600 text-sm">סה"כ הזמנות</p>
-                            <p id="totalOrders" class="text-2xl font-bold text-blue-800">$0</p>
+                <!-- סיכום יתרות - חצי רוחב במרכז -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">סיכום יתרות</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-blue-50 rounded-lg p-3 text-center">
+                            <p class="text-blue-600 text-xs">סה"כ הזמנות</p>
+                            <p id="totalOrders" class="text-xl font-bold text-blue-800">$0</p>
                         </div>
-                        <div class="bg-green-50 rounded-xl p-4 text-center">
-                            <p class="text-green-600 text-sm">סה"כ שולם</p>
-                            <p id="totalPaid" class="text-2xl font-bold text-green-800">$0</p>
+                        <div class="bg-green-50 rounded-lg p-3 text-center">
+                            <p class="text-green-600 text-xs">סה"כ שולם</p>
+                            <p id="totalPaid" class="text-xl font-bold text-green-800">$0</p>
                         </div>
-                        <div class="bg-red-50 rounded-xl p-4 text-center">
-                            <p class="text-red-600 text-sm">יתרה לגבייה</p>
-                            <p id="totalBalance" class="text-2xl font-bold text-red-800">$0</p>
+                        <div class="bg-red-50 rounded-lg p-3 text-center">
+                            <p class="text-red-600 text-xs">יתרה לגבייה</p>
+                            <p id="totalBalance" class="text-xl font-bold text-red-800">$0</p>
                         </div>
                     </div>
                 </div>
             </div>
-
-        </div>
         </main>
     </div>
 

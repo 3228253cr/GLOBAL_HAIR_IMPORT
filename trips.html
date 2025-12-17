@@ -10,21 +10,72 @@
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Heebo', sans-serif; }
         .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; }
         .toast.success { background: #10B981; }
         .toast.error { background: #EF4444; }
-        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
         .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
         .main-content { margin-right: 200px; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
         .nav-item:hover { background: rgba(255,255,255,0.1); }
         .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .compact-table th, .compact-table td { padding: 6px 10px; white-space: nowrap; }
+        .compact-table { width: auto; }
+        .icon-btn { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .icon-btn:hover { transform: scale(1.1); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .small-input { width: 80px; }
+        .small-select { width: 100px; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="toastContainer"></div>
+
+    <!-- מודאל עריכה/הוספה -->
+    <div id="modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modalTitle" class="text-xl font-bold mb-4">הוספת נסיעה חדשה</h3>
+            <form id="tripForm" onsubmit="saveTrip(event)">
+                <input type="hidden" id="tripId">
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-1 text-sm">תאריך יציאה</label>
+                    <input type="date" id="date_from" required class="small-input border-2 border-gray-200 rounded-lg px-2 py-1 focus:border-yellow-500 focus:outline-none text-sm">
+                </div>
+
+                <!-- הוצאות נסיעה -->
+                <div class="mb-4 p-3 bg-orange-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-sm font-bold text-gray-700">💰 הוצאות נסיעה</h4>
+                        <button type="button" onclick="addExpenseRow()" class="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600">+ הוצאה</button>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-orange-100">
+                            <tr>
+                                <th class="px-2 py-1 text-right">סוג</th>
+                                <th class="px-2 py-1 text-right">סכום ($)</th>
+                                <th class="px-2 py-1 text-right">הערות</th>
+                                <th class="px-2 py-1 w-8"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseRowsBody"></tbody>
+                        <tfoot class="bg-orange-50">
+                            <tr>
+                                <td class="px-2 py-1 font-bold">סה"כ:</td>
+                                <td id="totalExpensesDisplay" class="px-2 py-1 font-bold text-orange-600">$0</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" id="saveBtn" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition text-sm">💾 שמור</button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 transition text-sm">ביטול</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- סרגל צד קבוע -->
     <aside class="sidebar bg-gray-800 shadow-xl">
@@ -39,53 +90,23 @@
         </div>
         
         <nav class="py-4">
-            <a href="dashboard.html" class="nav-item">
-                <span>📊</span>
-                <span>דשבורד</span>
-            </a>
-            <a href="suppliers.html" class="nav-item">
-                <span>🏭</span>
-                <span>ספקים</span>
-            </a>
-            <a href="trips.html" class="nav-item active">
-                <span>✈️</span>
-                <span>נסיעות</span>
-            </a>
-            <a href="products.html" class="nav-item">
-                <span>📦</span>
-                <span>מוצרים</span>
-            </a>
-            <a href="customers.html" class="nav-item">
-                <span>👥</span>
-                <span>לקוחות</span>
-            </a>
-            <a href="orders.html" class="nav-item">
-                <span>📋</span>
-                <span>הזמנות</span>
-            </a>
-            <a href="invoices.html" class="nav-item">
-                <span>🧾</span>
-                <span>חשבוניות</span>
-            </a>
-            <a href="agents-management.html" class="nav-item">
-                <span>🤝</span>
-                <span>סוכנים</span>
-            </a>
-            <a href="reports.html" class="nav-item">
-                <span>📈</span>
-                <span>דוחות</span>
-            </a>
-            <a href="maintenance.html" class="nav-item">
-                <span>⚙️</span>
-                <span>תחזוקה</span>
-            </a>
+            <a href="dashboard.html" class="nav-item"><span>📊</span><span>דשבורד</span></a>
+            <a href="suppliers.html" class="nav-item"><span>🏭</span><span>ספקים</span></a>
+            <a href="trips.html" class="nav-item active"><span>✈️</span><span>נסיעות</span></a>
+            <a href="products.html" class="nav-item"><span>📦</span><span>מוצרים</span></a>
+            <a href="customers.html" class="nav-item"><span>👥</span><span>לקוחות</span></a>
+            <a href="orders.html" class="nav-item"><span>📋</span><span>הזמנות</span></a>
+            <a href="invoices.html" class="nav-item"><span>🧾</span><span>חשבוניות</span></a>
+            <a href="inventory.html" class="nav-item"><span>📦</span><span>מלאי</span></a>
+            <a href="agents-management.html" class="nav-item"><span>🤝</span><span>סוכנים</span></a>
+            <a href="reports.html" class="nav-item"><span>📈</span><span>דוחות</span></a>
+            <a href="maintenance.html" class="nav-item"><span>⚙️</span><span>תחזוקה</span></a>
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
             <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
             <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
-                <span>🚪</span>
-                <span>התנתק</span>
+                <span>🚪</span><span>התנתק</span>
             </button>
         </div>
     </aside>
@@ -93,76 +114,24 @@
     <!-- תוכן ראשי -->
     <div class="main-content">
         <main class="p-8">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800">✈️ ניהול נסיעות</h2>
-                <button onclick="showAddForm()" class="gold-gradient text-gray-900 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2">
-                    <span class="text-xl">+</span>
-                    <span>הוסף נסיעה</span>
-                </button>
-            </div>
-
-            <!-- טופס הוספה/עריכה -->
-            <div id="formContainer" class="bg-white rounded-2xl shadow-lg p-6 mb-8 hidden">
-                <h3 id="formTitle" class="text-2xl font-bold mb-6">הוספת נסיעה חדשה</h3>
-                <form id="tripForm" onsubmit="saveTrip(event)">
-                    <input type="hidden" id="tripId">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">תאריך יציאה</label>
-                            <input type="date" id="date_from" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
-                        </div>
-                    </div>
-
-                    <!-- שורות הוצאות -->
-                    <div class="mb-6 p-4 bg-orange-50 rounded-xl">
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 class="text-xl font-bold text-gray-700">💰 הוצאות נסיעה</h4>
-                            <button type="button" onclick="addExpenseRow()" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition">+ הוסף הוצאה</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border border-gray-200 rounded-xl bg-white">
-                                <thead class="bg-orange-100">
-                                    <tr>
-                                        <th class="px-4 py-3 text-right">#</th>
-                                        <th class="px-4 py-3 text-right">סוג הוצאה</th>
-                                        <th class="px-4 py-3 text-right">סכום ($)</th>
-                                        <th class="px-4 py-3 text-right">הערות</th>
-                                        <th class="px-4 py-3 text-center">פעולות</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="expenseRowsBody">
-                                </tbody>
-                                <tfoot class="bg-orange-50">
-                                    <tr>
-                                        <td colspan="2" class="px-4 py-3 text-left font-bold">סה"כ הוצאות:</td>
-                                        <td id="totalExpensesDisplay" class="px-4 py-3 font-bold text-orange-600">$0.00</td>
-                                        <td colspan="2"></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <button type="submit" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">💾 שמור</button>
-                        <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
-                    </div>
-                </form>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">✈️ ניהול נסיעות</h2>
+                <button onclick="openModal()" class="gold-gradient text-gray-900 px-4 py-2 rounded-lg font-bold hover:opacity-90 transition text-sm">+ הוסף נסיעה</button>
             </div>
 
             <!-- טבלת נסיעות -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden inline-block">
                 <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
                 <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין נסיעות במערכת</div>
-                <table id="tripsTable" class="w-full hidden">
+                <table id="tripsTable" class="compact-table hidden">
                     <thead class="bg-gray-800 text-white">
                         <tr>
-                            <th class="px-6 py-4 text-right">תאריך יציאה</th>
-                            <th class="px-6 py-4 text-right">כרטיס טיסה</th>
-                            <th class="px-6 py-4 text-right">מלון</th>
-                            <th class="px-6 py-4 text-right">אחר</th>
-                            <th class="px-6 py-4 text-right">סה"כ הוצאות</th>
-                            <th class="px-6 py-4 text-center">פעולות</th>
+                            <th class="text-right">תאריך</th>
+                            <th class="text-right">טיסה</th>
+                            <th class="text-right">מלון</th>
+                            <th class="text-right">אחר</th>
+                            <th class="text-right">סה"כ</th>
+                            <th class="text-center">פעולות</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -188,49 +157,49 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        function setLoading(btn, loading) {
-            if (loading) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner"></span>שומר...';
+        function formatNum(n) { return (n || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+        function formatDate(d) { return d ? new Date(d).toLocaleDateString('he-IL') : ''; }
+
+        function openModal(trip = null) {
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('tripForm').reset();
+            document.getElementById('expenseRowsBody').innerHTML = '';
+            expenseRowCounter = 0;
+            
+            if (trip) {
+                document.getElementById('modalTitle').textContent = 'עריכת נסיעה';
+                document.getElementById('tripId').value = trip.id;
+                document.getElementById('date_from').value = trip.date_from || '';
+                const tripExpenses = allExpenses.filter(e => e.trip_id === trip.id);
+                tripExpenses.forEach(e => addExpenseRow(e));
             } else {
-                btn.disabled = false;
-                btn.innerHTML = '💾 שמור';
+                document.getElementById('modalTitle').textContent = 'הוספת נסיעה חדשה';
+                document.getElementById('tripId').value = '';
             }
+            calculateTotalExpenses();
         }
 
-        function formatNum(num) {
-            return parseFloat(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-        function formatDateDDMMYY(dateStr) {
-            if (!dateStr) return '';
-            const d = new Date(dateStr);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = String(d.getFullYear()).slice(-2);
-            return `${day}/${month}/${year}`;
-        }
-
-        window.onload = async function() {
+        window.onload = function() {
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
             if (!isLoggedIn) { window.location.href = 'index.html'; return; }
             const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
             document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
             if (typeof supabase !== 'undefined') {
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                await loadTrips();
+                loadTrips();
             }
         };
 
         async function loadTrips() {
-            const { data, error } = await supabaseClient.from('trips').select('*').order('date_from', { ascending: false });
-            if (error) { showToast('שגיאה בטעינת נתונים', 'error'); return; }
-            trips = data || [];
-            
-            // שליפת הוצאות
-            const { data: expenses } = await supabaseClient.from('trip_expenses').select('*');
-            allExpenses = expenses || [];
-            
+            document.getElementById('loading').classList.remove('hidden');
+            const [tripsResult, expensesResult] = await Promise.all([
+                supabaseClient.from('trips').select('*').order('date_from', { ascending: false }),
+                supabaseClient.from('trip_expenses').select('*')
+            ]);
+            trips = tripsResult.data || [];
+            allExpenses = expensesResult.data || [];
             renderTable();
         }
 
@@ -239,64 +208,59 @@
             if (trips.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
             document.getElementById('tripsTable').classList.remove('hidden');
             document.getElementById('tableBody').innerHTML = trips.map((t, i) => {
-                const tripExpenses = allExpenses.filter(e => e.trip_id === t.id);
-                const flight = tripExpenses.filter(e => e.expense_type === 'כרטיס טיסה').reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-                const hotel = tripExpenses.filter(e => e.expense_type === 'מלון').reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-                const other = tripExpenses.filter(e => e.expense_type === 'אחר').reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                const expenses = allExpenses.filter(e => e.trip_id === t.id);
+                let flight = 0, hotel = 0, other = 0;
+                expenses.forEach(e => {
+                    if (e.expense_type === 'כרטיס טיסה') flight += e.amount || 0;
+                    else if (e.expense_type === 'מלון') hotel += e.amount || 0;
+                    else other += e.amount || 0;
+                });
                 const total = flight + hotel + other;
                 return `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
-                    <td class="px-6 py-4">${formatDateDDMMYY(t.date_from)}</td>
-                    <td class="px-6 py-4 text-blue-600">$${formatNum(flight)}</td>
-                    <td class="px-6 py-4 text-purple-600">$${formatNum(hotel)}</td>
-                    <td class="px-6 py-4 text-gray-600">$${formatNum(other)}</td>
-                    <td class="px-6 py-4 font-bold text-orange-600">$${formatNum(total)}</td>
-                    <td class="px-6 py-4"><div class="flex gap-2 justify-center">
-                        <button onclick="editTrip('${t.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
-                        <button onclick="deleteTrip('${t.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
-                    </div></td>
+                    <td>${formatDate(t.date_from)}</td>
+                    <td class="text-blue-600">$${formatNum(flight)}</td>
+                    <td class="text-purple-600">$${formatNum(hotel)}</td>
+                    <td class="text-gray-600">$${formatNum(other)}</td>
+                    <td class="font-bold text-orange-600">$${formatNum(total)}</td>
+                    <td>
+                        <div class="flex gap-1 justify-center">
+                            <span onclick="editTrip('${t.id}')" class="icon-btn bg-blue-100 text-blue-600" title="עריכה">✏️</span>
+                            <span onclick="deleteTrip('${t.id}')" class="icon-btn bg-red-100 text-red-600" title="מחיקה">🗑️</span>
+                        </div>
+                    </td>
                 </tr>
             `}).join('');
         }
 
-        function showAddForm() { 
-            document.getElementById('formContainer').classList.remove('hidden'); 
-            document.getElementById('formTitle').textContent = 'הוספת נסיעה חדשה'; 
-            document.getElementById('tripId').value = ''; 
-            document.getElementById('tripForm').reset(); 
-            document.getElementById('expenseRowsBody').innerHTML = '';
-            expenseRowCounter = 0;
-            calculateTotalExpenses();
+        function editTrip(id) {
+            const t = trips.find(x => x.id === id);
+            if (t) openModal(t);
         }
-        
-        function hideForm() { document.getElementById('formContainer').classList.add('hidden'); }
 
-        // שורות הוצאות
         function addExpenseRow(existingData = null) {
             expenseRowCounter++;
             const rowId = expenseRowCounter;
             const tbody = document.getElementById('expenseRowsBody');
-            
             const row = document.createElement('tr');
             row.id = `expense-row-${rowId}`;
-            row.className = 'border-b hover:bg-orange-50';
+            row.className = 'border-b';
             row.innerHTML = `
-                <td class="px-4 py-3">${rowId}</td>
-                <td class="px-4 py-3">
-                    <select id="expense-type-${rowId}" class="border rounded-lg px-3 py-2 w-full">
-                        <option value="כרטיס טיסה" ${existingData?.expense_type === 'כרטיס טיסה' ? 'selected' : ''}>כרטיס טיסה</option>
+                <td class="px-2 py-1">
+                    <select id="expense-type-${rowId}" class="small-select border rounded px-1 py-1 text-xs">
+                        <option value="כרטיס טיסה" ${existingData?.expense_type === 'כרטיס טיסה' ? 'selected' : ''}>טיסה</option>
                         <option value="מלון" ${existingData?.expense_type === 'מלון' ? 'selected' : ''}>מלון</option>
                         <option value="אחר" ${existingData?.expense_type === 'אחר' ? 'selected' : ''}>אחר</option>
                     </select>
                 </td>
-                <td class="px-4 py-3">
-                    <input type="number" id="expense-amount-${rowId}" step="0.01" class="w-28 border rounded-lg px-3 py-2" oninput="calculateTotalExpenses()" value="${existingData?.amount || ''}">
+                <td class="px-2 py-1">
+                    <input type="number" id="expense-amount-${rowId}" step="0.01" class="w-16 border rounded px-1 py-1 text-xs" oninput="calculateTotalExpenses()" value="${existingData?.amount || ''}">
                 </td>
-                <td class="px-4 py-3">
-                    <input type="text" id="expense-notes-${rowId}" class="w-full border rounded-lg px-3 py-2" placeholder="הערות" value="${existingData?.notes || ''}">
+                <td class="px-2 py-1">
+                    <input type="text" id="expense-notes-${rowId}" class="w-24 border rounded px-1 py-1 text-xs" value="${existingData?.notes || ''}">
                 </td>
-                <td class="px-4 py-3 text-center">
-                    <button type="button" onclick="removeExpenseRow(${rowId})" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">✕</button>
+                <td class="px-2 py-1">
+                    <span onclick="removeExpenseRow(${rowId})" class="icon-btn bg-red-100 text-red-600 text-xs">✕</span>
                 </td>
             `;
             tbody.appendChild(row);
@@ -334,32 +298,14 @@
             return expenses;
         }
 
-        async function editTrip(id) { 
-            const t = trips.find(x => x.id === id); 
-            if (!t) return; 
-            document.getElementById('formTitle').textContent = 'עריכת נסיעה'; 
-            document.getElementById('tripId').value = t.id; 
-            document.getElementById('date_from').value = t.date_from; 
-            
-            // טעינת הוצאות
-            document.getElementById('expenseRowsBody').innerHTML = '';
-            expenseRowCounter = 0;
-            const tripExpenses = allExpenses.filter(e => e.trip_id === id);
-            tripExpenses.forEach(e => addExpenseRow(e));
-            calculateTotalExpenses();
-            
-            document.getElementById('formContainer').classList.remove('hidden'); 
-        }
-
         async function saveTrip(event) {
             event.preventDefault();
             const btn = document.getElementById('saveBtn');
-            setLoading(btn, true);
+            btn.disabled = true;
+            btn.textContent = 'שומר...';
             
             const id = document.getElementById('tripId').value;
-            const data = { 
-                date_from: document.getElementById('date_from').value
-            };
+            const data = { date_from: document.getElementById('date_from').value };
             
             let tripId = id;
             let result;
@@ -368,34 +314,29 @@
                 result = await supabaseClient.from('trips').update(data).eq('id', id);
             } else {
                 result = await supabaseClient.from('trips').insert([data]).select();
-                if (result.data && result.data[0]) {
-                    tripId = result.data[0].id;
-                }
+                if (result.data && result.data[0]) tripId = result.data[0].id;
             }
             
             if (result.error) { 
                 showToast('שגיאה: ' + result.error.message, 'error'); 
-                setLoading(btn, false); 
+                btn.disabled = false;
+                btn.textContent = '💾 שמור';
                 return; 
             }
             
-            // שמירת הוצאות
-            // מחיקת הוצאות קיימות
-            if (id) {
-                await supabaseClient.from('trip_expenses').delete().eq('trip_id', id);
-            }
+            if (id) await supabaseClient.from('trip_expenses').delete().eq('trip_id', id);
             
-            // הוספת הוצאות חדשות
             const expenses = getExpensesData();
             if (expenses.length > 0) {
                 const expensesWithTripId = expenses.map(e => ({ ...e, trip_id: tripId }));
                 await supabaseClient.from('trip_expenses').insert(expensesWithTripId);
             }
             
-            showToast(id ? 'הנסיעה עודכנה בהצלחה!' : 'הנסיעה נוספה בהצלחה!');
-            hideForm();
+            showToast(id ? 'הנסיעה עודכנה!' : 'הנסיעה נוספה!');
+            closeModal();
             await loadTrips();
-            setLoading(btn, false);
+            btn.disabled = false;
+            btn.textContent = '💾 שמור';
         }
 
         async function deleteTrip(id) {
@@ -407,6 +348,10 @@
         }
 
         function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
     </script>
 </body>
 </html>
