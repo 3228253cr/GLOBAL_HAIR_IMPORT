@@ -157,11 +157,11 @@
             
             let isValid = false;
 
-            // נסה לבדוק מול הדאטאבייס
+            // נסה לבדוק מול הדאטאבייס - טבלת agents
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient
-                        .from('users')
+                        .from('agents')
                         .select('*')
                         .eq('username', username)
                         .eq('password', password)
