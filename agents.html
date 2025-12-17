@@ -34,13 +34,13 @@
             <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">שם משתמש</label>
-                    <input type="text" id="loginUsername" required
+                    <input type="text" id="loginUsername" name="username" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן שם משתמש">
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">סיסמה</label>
-                    <input type="password" id="loginPassword" required
+                    <input type="password" id="loginPassword" name="password" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
                            placeholder="הזן סיסמה">
                 </div>
@@ -216,13 +216,19 @@
         // Login function
         async function handleLogin(event) {
             event.preventDefault();
+            event.stopPropagation();
+            
+            // השהיה קטנה לאפשר ל-autofill להתעדכן
+            await new Promise(resolve => setTimeout(resolve, 100));
             
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             
+            console.log('Trying login:', username); // לדיבוג
+            
             if (!username || !password) {
                 showToast('הזן שם משתמש וסיסמה', 'error');
-                return;
+                return false;
             }
 
             try {
@@ -233,9 +239,11 @@
                     .eq('password', password)
                     .single();
 
+                console.log('Result:', data, error); // לדיבוג
+
                 if (error || !data) {
                     showToast('שם משתמש או סיסמה שגויים', 'error');
-                    return;
+                    return false;
                 }
 
                 currentAgent = data;
@@ -246,6 +254,7 @@
                 showToast('שגיאת התחברות', 'error');
                 console.error(err);
             }
+            return false;
         }
 
         function showAgentDashboard() {
