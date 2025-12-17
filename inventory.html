@@ -157,9 +157,9 @@
                 (credits || []).forEach(c => { stat3 += parseInt(c.quantity) || 0; });
 
                 // 4. יציאה לסוכנים - SUM מטבלת agent_inventory
-                const { data: agentOut } = await supabaseClient.from('agent_inventory').select('quantity');
+                const { data: agentOut } = await supabaseClient.from('agent_inventory').select('quantity_received');
                 let stat4 = 0;
-                (agentOut || []).forEach(a => { stat4 += parseInt(a.quantity) || 0; });
+                (agentOut || []).forEach(a => { stat4 += parseInt(a.quantity_received) || 0; });
 
                 // 5. חזרה מסוכנים - SUM מטבלת agent_returns
                 const { data: agentReturns } = await supabaseClient.from('agent_returns').select('quantity');
