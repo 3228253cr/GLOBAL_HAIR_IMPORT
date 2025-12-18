@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - ניהול הזמנות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 16px 32px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideDown 0.3s ease;
+        }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+        
+        .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 750px;
+            margin: 20px auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body {
+            padding: 16px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        
+        /* טבלה ראשית צרה */
+        .main-table th, .main-table td {
+            padding: 4px 4px !important;
+            font-size: 13px;
+        }
+        
+        /* שדות קטנים במודאל */
+        .compact-input {
+            padding: 6px 10px !important;
+            font-size: 13px !important;
+        }
+        
+        /* טבלאות פנימיות צפופות */
+        .compact-table th, .compact-table td {
+            padding: 2px 3px !important;
+            font-size: 12px !important;
+        }
+        .compact-table input, .compact-table select {
+            padding: 3px 6px !important;
+            font-size: 11px !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <div id="toastContainer"></div>
+
+    <!-- סרגל צד -->
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item"><span>📊</span><span>דשבורד</span></a>
+            <a href="suppliers.html" class="nav-item"><span>🏭</span><span>ספקים</span></a>
+            <a href="trips.html" class="nav-item"><span>✈️</span><span>נסיעות</span></a>
+            <a href="products.html" class="nav-item"><span>📦</span><span>מוצרים</span></a>
+            <a href="customers.html" class="nav-item"><span>👥</span><span>לקוחות</span></a>
+            <a href="orders.html" class="nav-item active"><span>📋</span><span>הזמנות</span></a>
+            <a href="invoices.html" class="nav-item"><span>🧾</span><span>חשבוניות</span></a>
+            <a href="inventory.html" class="nav-item"><span>📦</span><span>מלאי</span></a>
+            <a href="agents-management.html" class="nav-item"><span>🤝</span><span>סוכנים</span></a>
+            <a href="reports.html" class="nav-item"><span>📈</span><span>דוחות</span></a>
+            <a href="maintenance.html" class="nav-item"><span>⚙️</span><span>תחזוקה</span></a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span><span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content">
+        <main class="p-6">
+
+        <div class="flex justify-between items-center mb-6 no-print">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">ניהול הזמנות</h2>
+                <p class="text-gray-500 text-sm">ניהול כל ההזמנות במערכת</p>
+            </div>
+            <button onclick="openOrderModal()" class="gold-gradient text-white px-4 py-2 rounded-xl hover:opacity-90 transition shadow-lg text-sm">+ הזמנה חדשה</button>
+        </div>
+
+        <!-- טבלת הזמנות -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden no-print">
+            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+            <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין הזמנות במערכת</div>
+            <table id="ordersTable" class="w-full main-table hidden">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="text-right">מספר</th>
+                        <th class="text-right">לקוח</th>
+                        <th class="text-right">תאריך</th>
+                        <th class="text-right">סכום</th>
+                        <th class="text-right">סטטוס</th>
+                        <th class="text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="printArea" class="hidden"></div>
+
+        </main>
+    </div>
+
+    <!-- ========== מודאל הזמנה (חדשה + עריכה) ========== -->
+    <div id="orderModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold" id="modalTitle">הזמנה חדשה</h3>
+                <button onclick="closeOrderModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <input type="hidden" id="orderId">
+                
+                <!-- פרטי הזמנה בסיסיים -->
+                <div class="grid grid-cols-4 gap-1 mb-3">
+                    <div>
+                        <label class="block text-gray-600 text-xs mb-1">מספר הזמנה</label>
+                        <input type="text" id="order_number" readonly class="w-full border border-gray-200 rounded-lg compact-input bg-gray-100 font-bold text-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-xs mb-1">לקוח *</label>
+                        <select id="customer_id" required class="w-full border border-gray-200 rounded-lg compact-input">
+                            <option value="">בחר...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-xs mb-1">תאריך</label>
+                        <input type="date" id="order_date" class="w-full border border-gray-200 rounded-lg compact-input">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-xs mb-1">סטטוס</label>
+                        <select id="order_status" class="w-full border border-gray-200 rounded-lg compact-input">
+                            <option value="טיוטה">טיוטה</option>
+                            <option value="פתוח" selected>פתוח</option>
+                            <option value="בתהליך">בתהליך</option>
+                            <option value="נשלח">נשלח</option>
+                            <option value="הושלם">הושלם</option>
+                            <option value="בוטל">בוטל</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- פריטי הזמנה -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold text-gray-700">📦 פריטי הזמנה</h4>
+                        <button type="button" onclick="addOrderItem()" class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">+ פריט</button>
+                    </div>
+                    <table class="w-full border border-gray-200 rounded compact-table">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="text-right w-8">#</th>
+                                <th class="text-right">מוצר</th>
+                                <th class="text-right w-16">כמות</th>
+                                <th class="text-right w-20">מחיר</th>
+                                <th class="text-right w-20">סה"כ</th>
+                                <th class="text-center w-8">X</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemsBody"></tbody>
+                    </table>
+                    
+                    <!-- סיכום -->
+                    <div class="mt-2 bg-gray-50 rounded-lg p-2">
+                        <div class="flex flex-wrap gap-1 text-xs items-center">
+                            <div>סה"כ: <span id="subtotalDisplay" class="font-bold">$0</span></div>
+                            <div>הנחה: <input type="number" id="orderDiscount" step="0.01" oninput="calculateOrderTotal()" class="w-14 border rounded px-1 py-0.5 text-xs"></div>
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="includeVat" onchange="calculateOrderTotal()" class="w-3 h-3">
+                                <span>+מע"מ</span>
+                            </label>
+                            <div class="font-bold text-green-600">לתשלום: <span id="totalDisplay">$0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- שורות תשלום -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-bold text-gray-700">💳 תשלומים</h4>
+                        <div class="flex gap-1">
+                            <button type="button" onclick="openCheckModal()" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">צ'קים</button>
+                            <button type="button" onclick="addPaymentRow()" class="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600">+ תשלום</button>
+                        </div>
+                    </div>
+                    <table class="w-full border border-gray-200 rounded compact-table">
+                        <thead class="bg-purple-100">
+                            <tr>
+                                <th class="text-right w-6">#</th>
+                                <th class="text-right">תאריך</th>
+                                <th class="text-right w-14">סכום</th>
+                                <th class="text-right w-10">מטבע</th>
+                                <th class="text-right w-12">שער</th>
+                                <th class="text-right w-16">בש"ח</th>
+                                <th class="text-right">אמצעי</th>
+                                <th class="text-right">אסמכתא</th>
+                                <th class="text-center w-6">X</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentRowsBody"></tbody>
+                    </table>
+                    
+                    <div class="mt-2 bg-purple-50 rounded-lg p-2">
+                        <div class="flex gap-2 text-xs">
+                            <div>שולם: <span id="totalPaidDisplay" class="font-bold text-green-600">₪0</span></div>
+                            <div>יתרה: <span id="balanceDisplay" class="font-bold text-red-600">₪0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- הערות -->
+                <div>
+                    <label class="block text-gray-600 text-xs mb-1">הערות</label>
+                    <textarea id="notes" rows="2" class="w-full border border-gray-200 rounded-lg compact-input"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeOrderModal()" class="bg-gray-400 text-white px-3 py-1.5 rounded-lg hover:bg-gray-500 text-sm">ביטול</button>
+                <button onclick="confirmDeliveryNote()" class="bg-purple-500 text-white px-3 py-1.5 rounded-lg hover:bg-purple-600 text-sm">📄 ת.משלוח</button>
+                <button onclick="confirmInvoice()" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 text-sm">🧾 חשבונית</button>
+                <button onclick="saveOrder()" id="saveBtn" class="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 text-sm">💾 שמור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== מודאל צ'קים דחויים ========== -->
+    <div id="checkModal" class="modal-overlay hidden" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">💳 צ'קים דחויים</h3>
+                <button onclick="closeCheckModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-600 text-sm mb-1">כמה תשלומים?</label>
+                        <input type="number" id="checkCount" min="1" value="10" class="w-full border border-gray-200 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm mb-1">סכום כולל (₪)</label>
+                        <input type="number" id="checkTotal" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm mb-1">תאריך צ'ק ראשון</label>
+                        <input type="date" id="checkFirstDate" class="w-full border border-gray-200 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm mb-1">מרווח (ימים)</label>
+                        <input type="number" id="checkInterval" min="1" value="30" class="w-full border border-gray-200 rounded-lg px-3 py-2">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeCheckModal()" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 text-sm">ביטול</button>
+                <button onclick="generateChecks()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">✓ צור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== מודאל אישור ת.משלוח ========== -->
+    <div id="deliveryConfirmModal" class="modal-overlay hidden" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 350px;">
+            <div class="modal-body text-center py-6">
+                <div class="text-4xl mb-3">📄</div>
+                <h3 class="text-lg font-bold mb-3">הפקת תעודת משלוח</h3>
+                <p class="text-gray-600 mb-4 text-sm">האם להפיק תעודת משלוח?</p>
+                <div class="flex gap-2 justify-center">
+                    <button onclick="closeDeliveryConfirm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 text-sm">לא</button>
+                    <button onclick="generateDeliveryNote()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">כן, הפק</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== מודאל אישור חשבונית ========== -->
+    <div id="invoiceConfirmModal" class="modal-overlay hidden" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 350px;">
+            <div class="modal-body text-center py-6">
+                <div class="text-4xl mb-3">🧾</div>
+                <h3 class="text-lg font-bold mb-3">הפקת חשבונית</h3>
+                <p class="text-gray-600 mb-4 text-sm">האם להפיק חשבונית?</p>
+                <div class="flex gap-2 justify-center">
+                    <button onclick="closeInvoiceConfirm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 text-sm">לא</button>
+                    <button onclick="generateInvoice()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">כן, הפק</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== מודאל אישור מחיקה ========== -->
+    <div id="deleteConfirmModal" class="modal-overlay hidden" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 350px;">
+            <div class="modal-body text-center py-6">
+                <div class="text-4xl mb-3">⚠️</div>
+                <h3 class="text-lg font-bold mb-3">מחיקת הזמנה</h3>
+                <p class="text-gray-600 mb-4 text-sm">האם אתה בטוח שברצונך למחוק את הזמנה <span id="deleteOrderNumber" class="font-bold"></span>?</p>
+                <div class="flex gap-2 justify-center">
+                    <button onclick="closeDeleteConfirm()" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 text-sm">לא</button>
+                    <button onclick="executeDelete()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">כן, מחק</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let orders = [];
+        let customers = [];
+        let itemCounter = 0;
+        let paymentRowCounter = 0;
+        let currentExchangeRate = 3.22;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        window.onload = function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                loadCustomers();
+                loadOrders();
+            }
+        };
+
+        async function loadCustomers() {
+            const { data } = await supabaseClient.from('customers').select('*').order('company_name');
+            customers = data || [];
+            const options = '<option value="">בחר...</option>' + customers.map(c => `<option value="${c.id}">${c.company_name}</option>`).join('');
+            document.getElementById('customer_id').innerHTML = options;
+        }
+
+        async function loadOrders() {
+            document.getElementById('loading').classList.remove('hidden');
+            const { data, error } = await supabaseClient.from('orders').select('*, customers(company_name)').order('created_at', { ascending: false });
+            if (error) { document.getElementById('loading').textContent = 'שגיאה: ' + error.message; return; }
+            orders = data || [];
+            renderTable();
+        }
+
+        function getStatusBadge(status) {
+            const colors = { 
+                'טיוטה': 'bg-gray-100 text-gray-800',
+                'פתוח': 'bg-blue-100 text-blue-800', 
+                'בתהליך': 'bg-yellow-100 text-yellow-800', 
+                'נשלח': 'bg-purple-100 text-purple-800',
+                'הושלם': 'bg-green-100 text-green-800', 
+                'בוטל': 'bg-red-100 text-red-800' 
+            };
+            return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100'}">${status || ''}</span>`;
+        }
+
+        function renderTable() {
+            document.getElementById('loading').classList.add('hidden');
+            if (orders.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
+            document.getElementById('ordersTable').classList.remove('hidden');
+            document.getElementById('tableBody').innerHTML = orders.map((o, i) => {
+                const hasDelivery = o.delivery_note_number;
+                const hasInvoice = o.invoice_number;
+                const hasDocuments = hasDelivery || hasInvoice;
+                const dnClass = hasDelivery ? 'bg-gray-400' : 'bg-purple-500 hover:bg-purple-600 cursor-pointer';
+                const invClass = hasInvoice ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600 cursor-pointer';
+                
+                // כפתור מחיקה - מושבת אם הופק מסמך
+                const deleteBtn = hasDocuments 
+                    ? `<span class="w-6 h-6 rounded bg-gray-200 text-gray-400 flex items-center justify-center cursor-not-allowed text-sm" title="לא ניתן למחוק - הופק מסמך">🗑️</span>`
+                    : `<span onclick="confirmDelete('${o.id}', '${o.order_number || ''}')" class="w-6 h-6 rounded bg-red-100 text-red-600 flex items-center justify-center cursor-pointer hover:scale-110 text-sm" title="מחיקה">🗑️</span>`;
+                
+                return `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="font-semibold">${o.order_number || '-'}</td>
+                    <td>${o.customers?.company_name || ''}</td>
+                    <td>${o.order_date || ''}</td>
+                    <td class="font-bold">$${o.total_amount || 0}</td>
+                    <td>${getStatusBadge(o.status)}</td>
+                    <td>
+                        <div class="flex gap-0.5 justify-center items-center">
+                            <span onclick="openOrderModal('${o.id}')" class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer hover:scale-110 text-sm" title="עריכה">✏️</span>
+                            ${deleteBtn}
+                            <span class="text-xs px-1.5 py-0.5 rounded ${dnClass} text-white">${hasDelivery ? 'ת.מ✓' : 'ת.מ'}</span>
+                            <span class="text-xs px-1.5 py-0.5 rounded ${invClass} text-white">${hasInvoice ? 'ח-ת✓' : 'ח-ת'}</span>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        // ========== מודאל הזמנה ==========
+        async function openOrderModal(orderId = null) {
+            document.getElementById('orderId').value = '';
+            document.getElementById('order_number').value = '';
+            document.getElementById('customer_id').value = '';
+            document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('order_status').value = 'פתוח';
+            document.getElementById('orderDiscount').value = '';
+            document.getElementById('includeVat').checked = false;
+            document.getElementById('notes').value = '';
+            document.getElementById('orderItemsBody').innerHTML = '';
+            document.getElementById('paymentRowsBody').innerHTML = '';
+            itemCounter = 0;
+            paymentRowCounter = 0;
+
+            if (orderId) {
+                const o = orders.find(x => x.id === orderId);
+                if (!o) return;
+
+                document.getElementById('modalTitle').textContent = 'עריכת הזמנה ' + (o.order_number || '');
+                document.getElementById('orderId').value = o.id;
+                document.getElementById('order_number').value = o.order_number || '';
+                document.getElementById('customer_id').value = o.customer_id || '';
+                document.getElementById('order_date').value = o.order_date || '';
+                document.getElementById('order_status').value = o.status || 'פתוח';
+                document.getElementById('orderDiscount').value = o.discount || '';
+                document.getElementById('includeVat').checked = o.include_vat || false;
+                document.getElementById('notes').value = o.notes || '';
+
+                const { data: items } = await supabaseClient.from('order_items').select('*').eq('order_id', orderId);
+                if (items && items.length > 0) {
+                    items.forEach(item => addOrderItem(item));
+                } else {
+                    addOrderItem();
+                }
+
+                const { data: payments } = await supabaseClient.from('payments').select('*').eq('order_id', orderId);
+                if (payments && payments.length > 0) {
+                    payments.forEach(p => addPaymentRow(p));
+                }
+            } else {
+                document.getElementById('modalTitle').textContent = 'הזמנה חדשה';
+                const orderNumber = await generateOrderNumber();
+                document.getElementById('order_number').value = orderNumber;
+                addOrderItem();
+            }
+
+            calculateOrderTotal();
+            calculateTotalPaid();
+            document.getElementById('orderModal').classList.remove('hidden');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        async function generateOrderNumber() {
+            const { data } = await supabaseClient
+                .from('orders')
+                .select('order_number')
+                .like('order_number', '25-%')
+                .order('order_number', { ascending: false })
+                .limit(1);
+            
+            let nextNumber = 1000;
+            if (data && data.length > 0 && data[0].order_number) {
+                const lastNum = parseInt(data[0].order_number.split('-')[1]) || 999;
+                nextNumber = lastNum + 1;
+            }
+            return `25-${nextNumber}`;
+        }
+
+        // ========== פריטי הזמנה ==========
+        function addOrderItem(item = null) {
+            itemCounter++;
+            const tbody = document.getElementById('orderItemsBody');
+            const row = document.createElement('tr');
+            row.id = `item-row-${itemCounter}`;
+            row.innerHTML = `
+                <td>${itemCounter}</td>
+                <td>
+                    <select id="product-${itemCounter}" class="w-full border rounded px-1 py-0.5">
+                        <option value="שיער">שיער</option>
+                        <option value="קצר">קצר</option>
+                        <option value="ארוך">ארוך</option>
+                        <option value="קצר וארוך">קצר וארוך</option>
+                        <option value="בלונדיני">בלונדיני</option>
+                        <option value="מיוחד">מיוחד</option>
+                    </select>
+                </td>
+                <td><input type="number" id="qty-${itemCounter}" value="${item?.quantity || ''}" min="1" oninput="calculateRowTotal(${itemCounter})" class="w-full border rounded px-1 py-0.5 text-center"></td>
+                <td><input type="number" id="price-${itemCounter}" value="${item?.unit_price || ''}" step="0.01" oninput="calculateRowTotal(${itemCounter})" class="w-full border rounded px-1 py-0.5 text-center"></td>
+                <td><span id="rowtotal-${itemCounter}" class="font-bold">$0</span></td>
+                <td class="text-center"><button type="button" onclick="removeOrderItem(${itemCounter})" class="text-red-500 hover:text-red-700">✕</button></td>
+            `;
+            tbody.appendChild(row);
+            if (item) document.getElementById(`product-${itemCounter}`).value = item.product_type || 'שיער';
+            calculateRowTotal(itemCounter);
+        }
+
+        function calculateRowTotal(rowId) {
+            const qty = parseFloat(document.getElementById(`qty-${rowId}`)?.value) || 0;
+            const price = parseFloat(document.getElementById(`price-${rowId}`)?.value) || 0;
+            document.getElementById(`rowtotal-${rowId}`).textContent = `$${(qty * price).toFixed(2)}`;
+            calculateOrderTotal();
+        }
+
+        function removeOrderItem(rowId) {
+            document.getElementById(`item-row-${rowId}`)?.remove();
+            calculateOrderTotal();
+        }
+
+        function calculateOrderTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('[id^="rowtotal-"]').forEach(el => {
+                subtotal += parseFloat(el.textContent.replace('$', '')) || 0;
+            });
+            const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
+            const orderTotal = subtotal - discount;
+            const includeVat = document.getElementById('includeVat')?.checked || false;
+            const totalToPay = includeVat ? orderTotal * 1.18 : orderTotal;
+            
+            document.getElementById('subtotalDisplay').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('totalDisplay').textContent = `$${totalToPay.toFixed(2)}`;
+            calculateBalance();
+        }
+
+        function getOrderItemsData() {
+            const items = [];
+            document.querySelectorAll('[id^="item-row-"]').forEach(row => {
+                const rowId = row.id.replace('item-row-', '');
+                const qty = parseFloat(document.getElementById(`qty-${rowId}`)?.value) || 0;
+                const price = parseFloat(document.getElementById(`price-${rowId}`)?.value) || 0;
+                if (qty > 0) {
+                    items.push({
+                        product_type: document.getElementById(`product-${rowId}`)?.value || 'שיער',
+                        quantity: qty,
+                        unit_price: price,
+                        total_price: qty * price
+                    });
+                }
+            });
+            return items;
+        }
+
+        // ========== שורות תשלום ==========
+        function addPaymentRow(data = null) {
+            paymentRowCounter++;
+            const rowId = paymentRowCounter;
+            const tbody = document.getElementById('paymentRowsBody');
+            const today = new Date().toISOString().split('T')[0];
+            
+            let amountILS = data?.amount_ils || 0;
+            if (!amountILS && data?.amount) {
+                amountILS = data.currency === 'USD' ? data.amount * (data.exchange_rate || currentExchangeRate) : data.amount;
+            }
+            
+            const row = document.createElement('tr');
+            row.id = `payment-row-${rowId}`;
+            row.innerHTML = `
+                <td>${rowId}</td>
+                <td><input type="date" id="pay-date-${rowId}" class="w-full border rounded px-1 py-0.5" value="${data?.payment_date || today}"></td>
+                <td><input type="number" id="pay-amount-${rowId}" step="0.01" class="w-full border rounded px-1 py-0.5" oninput="calculatePaymentILS(${rowId})" value="${data?.amount || ''}"></td>
+                <td>
+                    <select id="pay-currency-${rowId}" class="w-full border rounded px-1 py-0.5" onchange="calculatePaymentILS(${rowId})">
+                        <option value="ILS" ${data?.currency === 'ILS' ? 'selected' : ''}>₪</option>
+                        <option value="USD" ${data?.currency === 'USD' ? 'selected' : ''}>$</option>
+                    </select>
+                </td>
+                <td><input type="number" id="pay-rate-${rowId}" step="0.01" class="w-full border rounded px-1 py-0.5" value="${data?.exchange_rate || currentExchangeRate}" oninput="calculatePaymentILS(${rowId})"></td>
+                <td><span id="pay-ils-${rowId}" class="font-bold text-green-600">₪${amountILS.toFixed(2)}</span></td>
+                <td>
+                    <select id="pay-method-${rowId}" class="w-full border rounded px-1 py-0.5">
+                        <option value="מזומן" ${data?.payment_method === 'מזומן' ? 'selected' : ''}>מזומן</option>
+                        <option value="העברה" ${data?.payment_method === 'העברה בנקאית' ? 'selected' : ''}>העברה</option>
+                        <option value="צ'ק" ${data?.payment_method === "צ'ק" ? 'selected' : ''}>צ'ק</option>
+                        <option value="אשראי" ${data?.payment_method === 'אשראי' ? 'selected' : ''}>אשראי</option>
+                        <option value="ביט" ${data?.payment_method === 'ביט' ? 'selected' : ''}>ביט</option>
+                    </select>
+                </td>
+                <td><input type="text" id="pay-ref-${rowId}" class="w-full border rounded px-1 py-0.5" value="${data?.reference_number || ''}"></td>
+                <td class="text-center"><button type="button" onclick="removePaymentRow(${rowId})" class="text-red-500 hover:text-red-700">✕</button></td>
+            `;
+            tbody.appendChild(row);
+            calculatePaymentILS(rowId);
+        }
+
+        function calculatePaymentILS(rowId) {
+            const amount = parseFloat(document.getElementById(`pay-amount-${rowId}`)?.value) || 0;
+            const currency = document.getElementById(`pay-currency-${rowId}`)?.value;
+            const rate = parseFloat(document.getElementById(`pay-rate-${rowId}`)?.value) || currentExchangeRate;
+            const amountILS = currency === 'USD' ? amount * rate : amount;
+            document.getElementById(`pay-ils-${rowId}`).textContent = `₪${amountILS.toFixed(2)}`;
+            calculateTotalPaid();
+        }
+
+        function removePaymentRow(rowId) {
+            document.getElementById(`payment-row-${rowId}`)?.remove();
+            calculateTotalPaid();
+        }
+
+        function calculateTotalPaid() {
+            let total = 0;
+            document.querySelectorAll('[id^="pay-ils-"]').forEach(el => {
+                total += parseFloat(el.textContent.replace('₪', '')) || 0;
+            });
+            document.getElementById('totalPaidDisplay').textContent = `₪${total.toFixed(2)}`;
+            calculateBalance();
+        }
+
+        function calculateBalance() {
+            const totalToPay = parseFloat(document.getElementById('totalDisplay')?.textContent.replace('$', '')) || 0;
+            const totalToPayILS = totalToPay * currentExchangeRate;
+            const totalPaidILS = parseFloat(document.getElementById('totalPaidDisplay')?.textContent.replace('₪', '')) || 0;
+            const balance = totalToPayILS - totalPaidILS;
+            
+            const balanceEl = document.getElementById('balanceDisplay');
+            balanceEl.textContent = `₪${balance.toFixed(2)}`;
+            balanceEl.className = balance > 0 ? 'font-bold text-red-600' : 'font-bold text-green-600';
+        }
+
+        function getPaymentRowsData() {
+            const payments = [];
+            document.querySelectorAll('[id^="payment-row-"]').forEach(row => {
+                const rowId = row.id.replace('payment-row-', '');
+                const amount = parseFloat(document.getElementById(`pay-amount-${rowId}`)?.value) || 0;
+                if (amount > 0) {
+                    const currency = document.getElementById(`pay-currency-${rowId}`)?.value;
+                    const rate = parseFloat(document.getElementById(`pay-rate-${rowId}`)?.value) || currentExchangeRate;
+                    payments.push({
+                        amount: amount,
+                        currency: currency,
+                        exchange_rate: rate,
+                        amount_ils: currency === 'USD' ? amount * rate : amount,
+                        payment_method: document.getElementById(`pay-method-${rowId}`)?.value,
+                        reference_number: document.getElementById(`pay-ref-${rowId}`)?.value,
+                        payment_date: document.getElementById(`pay-date-${rowId}`)?.value || new Date().toISOString().split('T')[0]
+                    });
+                }
+            });
+            return payments;
+        }
+
+        // ========== צ'קים דחויים ==========
+        function openCheckModal() {
+            const balance = parseFloat(document.getElementById('balanceDisplay')?.textContent.replace('₪', '')) || 0;
+            if (balance > 0) document.getElementById('checkTotal').value = balance.toFixed(2);
+            document.getElementById('checkFirstDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('checkModal').classList.remove('hidden');
+        }
+        
+        function closeCheckModal() {
+            document.getElementById('checkModal').classList.add('hidden');
+        }
+        
+        function generateChecks() {
+            const count = parseInt(document.getElementById('checkCount').value) || 0;
+            const total = parseFloat(document.getElementById('checkTotal').value) || 0;
+            const firstDate = document.getElementById('checkFirstDate').value;
+            const interval = parseInt(document.getElementById('checkInterval').value) || 30;
+            
+            if (count <= 0 || total <= 0 || !firstDate) {
+                showToast('נא למלא את כל השדות', 'error');
+                return;
+            }
+            
+            const amountPerCheck = total / count;
+            const date = new Date(firstDate);
+            
+            for (let i = 0; i < count; i++) {
+                const checkDate = new Date(date);
+                checkDate.setDate(date.getDate() + (i * interval));
+                addPaymentRow({
+                    payment_date: checkDate.toISOString().split('T')[0],
+                    amount: amountPerCheck,
+                    currency: 'ILS',
+                    exchange_rate: currentExchangeRate,
+                    payment_method: "צ'ק",
+                    reference_number: ''
+                });
+            }
+            
+            closeCheckModal();
+            showToast(`נוצרו ${count} תשלומים!`);
+        }
+
+        // ========== שמירת הזמנה ==========
+        async function saveOrder() {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.textContent = 'שומר...';
+            
+            const idValue = document.getElementById('orderId').value;
+            const id = idValue && idValue.trim() !== '' ? idValue : null;
+            const items = getOrderItemsData();
+            const payments = getPaymentRowsData();
+            const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
+            const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
+            const totalAfterDiscount = subtotal - discount;
+            const totalPaid = payments.reduce((sum, p) => sum + p.amount_ils, 0);
+            const includeVat = document.getElementById('includeVat')?.checked || false;
+            
+            const customerId = document.getElementById('customer_id').value || null;
+            
+            const orderData = { 
+                order_number: document.getElementById('order_number').value,
+                customer_id: customerId, 
+                order_date: document.getElementById('order_date').value || null, 
+                status: document.getElementById('order_status').value || 'פתוח', 
+                discount: discount,
+                include_vat: includeVat,
+                total_amount: totalAfterDiscount,
+                paid_amount: totalPaid,
+                balance: totalAfterDiscount - totalPaid,
+                payment_status: totalPaid >= totalAfterDiscount ? 'שולם במלואו' : totalPaid > 0 ? 'שולם חלקית' : 'לא שולם',
+                notes: document.getElementById('notes').value 
+            };
+            
+            try {
+                let orderId = id;
+                
+                if (id) {
+                    const { error } = await supabaseClient.from('orders').update(orderData).eq('id', id);
+                    if (error) throw error;
+                    await supabaseClient.from('order_items').delete().eq('order_id', id);
+                    await supabaseClient.from('payments').delete().eq('order_id', id);
+                } else {
+                    const { data, error } = await supabaseClient.from('orders').insert([orderData]).select();
+                    if (error) throw error;
+                    orderId = data[0].id;
+                }
+                
+                if (items.length > 0) {
+                    await supabaseClient.from('order_items').insert(items.map(item => ({ ...item, order_id: orderId })));
+                }
+                
+                if (payments.length > 0) {
+                    await supabaseClient.from('payments').insert(payments.map(p => ({ ...p, order_id: orderId, customer_id: customerId })));
+                }
+                
+                showToast(id ? 'ההזמנה עודכנה!' : 'ההזמנה נוספה!');
+                closeOrderModal();
+                loadOrders();
+            } catch (error) {
+                showToast('שגיאה: ' + error.message, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '💾 שמור';
+        }
+
+        let deleteOrderId = null;
+
+        function confirmDelete(id, orderNumber) {
+            deleteOrderId = id;
+            document.getElementById('deleteOrderNumber').textContent = orderNumber;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function closeDeleteConfirm() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            deleteOrderId = null;
+        }
+
+        async function executeDelete() {
+            if (!deleteOrderId) return;
+            await supabaseClient.from('order_items').delete().eq('order_id', deleteOrderId);
+            await supabaseClient.from('payments').delete().eq('order_id', deleteOrderId);
+            await supabaseClient.from('orders').delete().eq('id', deleteOrderId);
+            showToast('ההזמנה נמחקה');
+            closeDeleteConfirm();
+            loadOrders();
+        }
+
+        async function deleteOrder(id) { 
+            if (!confirm('למחוק את ההזמנה?')) return; 
+            await supabaseClient.from('order_items').delete().eq('order_id', id);
+            await supabaseClient.from('payments').delete().eq('order_id', id);
+            await supabaseClient.from('orders').delete().eq('id', id); 
+            showToast('ההזמנה נמחקה');
+            loadOrders(); 
+        }
+
+        // ========== הפקת ת.משלוח ==========
+        function confirmDeliveryNote() {
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) { showToast('יש לשמור את ההזמנה קודם', 'error'); return; }
+            document.getElementById('deliveryConfirmModal').classList.remove('hidden');
+        }
+        
+        function closeDeliveryConfirm() {
+            document.getElementById('deliveryConfirmModal').classList.add('hidden');
+        }
+        
+        async function generateDeliveryNote() {
+            const orderId = document.getElementById('orderId').value;
+            const order = orders.find(o => o.id === orderId);
+            
+            const { data: lastDN } = await supabaseClient
+                .from('orders')
+                .select('delivery_note_number')
+                .not('delivery_note_number', 'is', null)
+                .order('delivery_note_number', { ascending: false })
+                .limit(1);
+            
+            let nextDN = 1000;
+            if (lastDN && lastDN.length > 0) {
+                const lastNum = parseInt(lastDN[0].delivery_note_number.split('-')[1]) || 999;
+                nextDN = lastNum + 1;
+            }
+            const dnNumber = `DN-${nextDN}`;
+            
+            await supabaseClient.from('orders').update({ delivery_note_number: dnNumber }).eq('id', orderId);
+            
+            await supabaseClient.from('invoices').insert({
+                invoice_number: dnNumber,
+                order_id: orderId,
+                customer_id: order?.customer_id,
+                invoice_date: new Date().toISOString().split('T')[0],
+                total_amount: order?.total_amount || 0,
+                status: 'תעודת משלוח',
+                type: 'delivery_note'
+            });
+            
+            closeDeliveryConfirm();
+            showToast('תעודת משלוח ' + dnNumber + ' הופקה!');
+            closeOrderModal();
+            loadOrders();
+        }
+
+        // ========== הפקת חשבונית ==========
+        function confirmInvoice() {
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) { showToast('יש לשמור את ההזמנה קודם', 'error'); return; }
+            document.getElementById('invoiceConfirmModal').classList.remove('hidden');
+        }
+        
+        function closeInvoiceConfirm() {
+            document.getElementById('invoiceConfirmModal').classList.add('hidden');
+        }
+        
+        async function generateInvoice() {
+            const orderId = document.getElementById('orderId').value;
+            const order = orders.find(o => o.id === orderId);
+            
+            const { data: lastInvoice } = await supabaseClient
+                .from('invoices')
+                .select('invoice_number')
+                .like('invoice_number', '2025-%')
+                .order('invoice_number', { ascending: false })
+                .limit(1);
+            
+            let nextInvoiceNum = 2000;
+            if (lastInvoice && lastInvoice.length > 0 && lastInvoice[0].invoice_number) {
+                const lastNum = parseInt(lastInvoice[0].invoice_number.split('-')[1]) || 1999;
+                nextInvoiceNum = lastNum + 1;
+            }
+            const invoiceNumber = `2025-${nextInvoiceNum}`;
+            
+            await supabaseClient.from('orders').update({ invoice_number: invoiceNumber }).eq('id', orderId);
+            
+            const subtotalUSD = order?.total_amount || 0;
+            const subtotalILS = subtotalUSD * currentExchangeRate;
+            const vat = subtotalILS * 0.18;
+            const totalILS = subtotalILS + vat;
+            
+            await supabaseClient.from('invoices').insert({
+                invoice_number: invoiceNumber,
+                order_id: orderId,
+                customer_id: order?.customer_id,
+                invoice_date: new Date().toISOString().split('T')[0],
+                total_amount: totalILS,
+                vat_amount: vat,
+                status: 'ממתין לתשלום',
+                type: 'invoice'
+            });
+            
+            closeInvoiceConfirm();
+            showToast('חשבונית ' + invoiceNumber + ' הופקה!');
+            closeOrderModal();
+            loadOrders();
+        }
+
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>
