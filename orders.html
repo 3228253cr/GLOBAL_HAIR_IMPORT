@@ -249,10 +249,11 @@
                                 <input type="checkbox" id="includeVat" onchange="calculateOrderTotal()" class="w-3 h-3">
                                 <span>+מע"מ</span>
                             </label>
-                            <label class="flex items-center gap-1 cursor-pointer">
-                                <input type="checkbox" id="roundUp" onchange="calculateOrderTotal()" class="w-3 h-3">
-                                <span>עיגול⬆</span>
-                            </label>
+                            <select id="roundOption" onchange="calculateOrderTotal()" class="border rounded px-1 py-0.5 text-xs">
+                                <option value="">ללא עיגול</option>
+                                <option value="up">עיגול ⬆</option>
+                                <option value="down">עיגול ⬇</option>
+                            </select>
                             <div class="font-bold text-green-600">לתשלום: <span id="totalDisplay">$0</span></div>
                         </div>
                     </div>
@@ -526,7 +527,7 @@
             document.getElementById('order_status').value = 'פתוח';
             document.getElementById('orderDiscount').value = '';
             document.getElementById('includeVat').checked = false;
-            document.getElementById('roundUp').checked = false;
+            document.getElementById('roundOption').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('orderItemsBody').innerHTML = '';
             document.getElementById('paymentRowsBody').innerHTML = '';
@@ -639,10 +640,12 @@
             const includeVat = document.getElementById('includeVat')?.checked || false;
             let totalToPay = includeVat ? orderTotal * 1.18 : orderTotal;
             
-            // עיגול כלפי מעלה
-            const roundUp = document.getElementById('roundUp')?.checked || false;
-            if (roundUp) {
-                totalToPay = Math.ceil(totalToPay / 10) * 10; // עיגול לעשרות
+            // עיגול
+            const roundOption = document.getElementById('roundOption')?.value || '';
+            if (roundOption === 'up') {
+                totalToPay = Math.ceil(totalToPay / 10) * 10; // עיגול לעשרות כלפי מעלה
+            } else if (roundOption === 'down') {
+                totalToPay = Math.floor(totalToPay / 10) * 10; // עיגול לעשרות כלפי מטה
             }
             
             document.getElementById('totalQtyDisplay').textContent = totalQty.toLocaleString();
@@ -834,11 +837,13 @@
             const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
             let totalAfterDiscount = subtotal - discount;
             const includeVat = document.getElementById('includeVat')?.checked || false;
-            const roundUp = document.getElementById('roundUp')?.checked || false;
+            const roundOption = document.getElementById('roundOption')?.value || '';
             
             let finalTotal = includeVat ? totalAfterDiscount * 1.18 : totalAfterDiscount;
-            if (roundUp) {
+            if (roundOption === 'up') {
                 finalTotal = Math.ceil(finalTotal / 10) * 10;
+            } else if (roundOption === 'down') {
+                finalTotal = Math.floor(finalTotal / 10) * 10;
             }
             
             const totalPaid = payments.reduce((sum, p) => sum + p.amount_ils, 0);
@@ -1018,11 +1023,13 @@
             const discount = parseFloat(document.getElementById('orderDiscount')?.value) || 0;
             let totalAfterDiscount = subtotal - discount;
             const includeVat = document.getElementById('includeVat')?.checked || false;
-            const roundUp = document.getElementById('roundUp')?.checked || false;
+            const roundOption = document.getElementById('roundOption')?.value || '';
             
             let finalTotal = includeVat ? totalAfterDiscount * 1.18 : totalAfterDiscount;
-            if (roundUp) {
+            if (roundOption === 'up') {
                 finalTotal = Math.ceil(finalTotal / 10) * 10;
+            } else if (roundOption === 'down') {
+                finalTotal = Math.floor(finalTotal / 10) * 10;
             }
             
             const totalPaid = payments.reduce((sum, p) => sum + p.amount_ils, 0);
