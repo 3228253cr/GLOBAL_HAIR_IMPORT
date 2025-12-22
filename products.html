@@ -63,14 +63,6 @@
                 <span>🧾</span>
                 <span>חשבוניות</span>
             </a>
-            <a href="inventory.html" class="nav-item">
-                <span>📦</span>
-                <span>מלאי</span>
-            </a>
-            <a href="agents-management.html" class="nav-item">
-                <span>🤝</span>
-                <span>סוכנים</span>
-            </a>
             <a href="reports.html" class="nav-item">
                 <span>📈</span>
                 <span>דוחות</span>
@@ -327,8 +319,8 @@
                     <td class="px-4 py-4 text-green-600 text-sm">$${formatNum(totalPaid)}</td>
                     <td class="px-4 py-4 font-bold text-sm ${balance > 0 ? 'text-red-600' : 'text-green-600'}">$${formatNum(balance)}</td>
                     <td class="px-4 py-4"><div class="flex gap-1 justify-center">
-                        <span onclick="editProduct('${p.id}')" class="w-7 h-7 rounded bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer hover:scale-110" title="עריכה">✏️</span>
-                        <span onclick="deleteProduct('${p.id}')" class="w-7 h-7 rounded bg-red-100 text-red-600 flex items-center justify-center cursor-pointer hover:scale-110" title="מחיקה">🗑️</span>
+                        <button onclick="editProduct('${p.id}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 text-sm">עריכה</button>
+                        <button onclick="deleteProduct('${p.id}')" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 text-sm">מחיקה</button>
                     </div></td>
                 </tr>
             `}).join('');
