@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Imports - ניהול נסיעות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 16px 32px; border-radius: 12px; color: white; font-weight: 500; z-index: 9999; animation: slideDown 0.3s ease; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
+        .main-content { margin-right: 200px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="toastContainer"></div>
+
+    <aside class="sidebar bg-gray-800 shadow-xl">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpeg" alt="Logo" class="w-12 h-12 object-contain">
+                <div>
+                    <h1 class="text-white font-bold">Global Imports</h1>
+                    <p class="text-gray-400 text-xs">Premium Hair Supply</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="py-4">
+            <a href="dashboard.html" class="nav-item"><span>📊</span><span>דשבורד</span></a>
+            <a href="suppliers.html" class="nav-item"><span>🏭</span><span>ספקים</span></a>
+            <a href="trips.html" class="nav-item active"><span>✈️</span><span>נסיעות</span></a>
+            <a href="products.html" class="nav-item"><span>📦</span><span>מוצרים</span></a>
+            <a href="customers.html" class="nav-item"><span>👥</span><span>לקוחות</span></a>
+            <a href="orders.html" class="nav-item"><span>📋</span><span>הזמנות</span></a>
+            <a href="invoices.html" class="nav-item"><span>🧾</span><span>חשבוניות</span></a>
+            <a href="reports.html" class="nav-item"><span>📈</span><span>דוחות</span></a>
+            <a href="maintenance.html" class="nav-item"><span>⚙️</span><span>תחזוקה</span></a>
+        </nav>
+        
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+                <span>🚪</span><span>התנתק</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <main class="p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800">✈️ ניהול נסיעות</h2>
+                <button onclick="openTripModal()" class="gold-gradient text-gray-900 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2">
+                    <span class="text-xl">+</span>
+                    <span>הוסף נסיעה</span>
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+                <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין נסיעות במערכת</div>
+                <table id="tripsTable" class="w-full hidden">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="px-3 py-4 text-right">תאריך יציאה</th>
+                            <th class="px-3 py-4 text-right">כרטיס טיסה</th>
+                            <th class="px-3 py-4 text-right">מלון</th>
+                            <th class="px-3 py-4 text-right">אחר</th>
+                            <th class="px-3 py-4 text-right">סה"כ הוצאות</th>
+                            <th class="px-3 py-4 text-center">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="tripModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle" class="text-xl font-bold">הוספת נסיעה חדשה</h3>
+                <button onclick="closeTripModal()" class="text-white hover:text-gray-300 text-2xl">&times;</button>
+            </div>
+            
+            <div class="p-6">
+                <input type="hidden" id="tripId">
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">תאריך יציאה</label>
+                    <input type="date" id="date_from" required class="w-full md:w-64 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                </div>
+
+                <div class="mb-6 p-4 bg-orange-50 rounded-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xl font-bold text-gray-700">💰 הוצאות נסיעה</h4>
+                        <button type="button" onclick="addExpenseRow()" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition">+ הוסף הוצאה</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-xl bg-white">
+                            <thead class="bg-orange-100">
+                                <tr>
+                                    <th class="px-4 py-3 text-right">#</th>
+                                    <th class="px-4 py-3 text-right">סוג הוצאה</th>
+                                    <th class="px-4 py-3 text-right">סכום ($)</th>
+                                    <th class="px-4 py-3 text-right">הערות</th>
+                                    <th class="px-4 py-3 text-center">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseRowsBody"></tbody>
+                            <tfoot class="bg-orange-50">
+                                <tr>
+                                    <td colspan="2" class="px-4 py-3 text-left font-bold">סה"כ הוצאות:</td>
+                                    <td id="totalExpensesDisplay" class="px-4 py-3 font-bold text-orange-600">$0.00</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="saveTrip()" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">💾 שמור</button>
+                    <button onclick="closeTripModal()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fpsvrqlviyrcifimfcby.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwc3ZycWx2aXlyY2lmaW1mY2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTIzNDAsImV4cCI6MjA4MDk2ODM0MH0.RDRDYCFD4PatNRzKwSzdQg__ZWhIyu4OUq0O8kdrqdE';
+        let supabaseClient = null;
+        let trips = [];
+        let allExpenses = [];
+        let expenseRowCounter = 0;
+
+        function formatNum(num) {
+            return num.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function setLoading(btn, loading) {
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span>שומר...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = '💾 שמור';
+            }
+        }
+
+        window.onload = function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) { window.location.href = 'index.html'; return; }
+            const username = localStorage.getItem('username') || sessionStorage.getItem('username') || 'משתמש';
+            document.getElementById('welcomeUser').textContent = 'שלום, ' + username;
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                loadTrips();
+            }
+        };
+
+        async function loadTrips() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('tripsTable').classList.add('hidden');
+            
+            const { data: tripsData, error } = await supabaseClient.from('trips').select('*').order('date_from', { ascending: false });
+            if (error) { document.getElementById('loading').textContent = 'שגיאה: ' + error.message; return; }
+            trips = tripsData || [];
+            
+            const { data: expensesData } = await supabaseClient.from('trip_expenses').select('*');
+            allExpenses = expensesData || [];
+            
+            renderTable();
+        }
+
+        function renderTable() {
+            document.getElementById('loading').classList.add('hidden');
+            if (trips.length === 0) { document.getElementById('emptyMessage').classList.remove('hidden'); return; }
+            document.getElementById('tripsTable').classList.remove('hidden');
+            document.getElementById('emptyMessage').classList.add('hidden');
+            
+            document.getElementById('tableBody').innerHTML = trips.map((t, i) => {
+                const tripExpenses = allExpenses.filter(e => e.trip_id === t.id);
+                const flight = tripExpenses.filter(e => e.expense_type === 'כרטיס טיסה').reduce((s, e) => s + (e.amount || 0), 0);
+                const hotel = tripExpenses.filter(e => e.expense_type === 'מלון').reduce((s, e) => s + (e.amount || 0), 0);
+                const other = tripExpenses.filter(e => e.expense_type === 'אחר').reduce((s, e) => s + (e.amount || 0), 0);
+                const total = flight + hotel + other;
+                
+                return `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
+                    <td class="px-3 py-4 font-semibold">${formatDate(t.date_from)}</td>
+                    <td class="px-3 py-4 text-blue-600">$${formatNum(flight)}</td>
+                    <td class="px-3 py-4 text-purple-600">$${formatNum(hotel)}</td>
+                    <td class="px-3 py-4 text-gray-600">$${formatNum(other)}</td>
+                    <td class="px-3 py-4 font-bold text-orange-600">$${formatNum(total)}</td>
+                    <td class="px-3 py-4"><div class="flex gap-2 justify-center">
+                        <button onclick="editTrip('${t.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
+                        <button onclick="deleteTrip('${t.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
+                    </div></td>
+                </tr>
+            `}).join('');
+        }
+
+        function openTripModal() { 
+            document.getElementById('modalTitle').textContent = 'הוספת נסיעה חדשה'; 
+            document.getElementById('tripId').value = ''; 
+            document.getElementById('date_from').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseRowsBody').innerHTML = '';
+            expenseRowCounter = 0;
+            calculateTotalExpenses();
+            document.getElementById('tripModal').classList.remove('hidden');
+        }
+        
+        function closeTripModal() { 
+            document.getElementById('tripModal').classList.add('hidden'); 
+        }
+
+        function addExpenseRow(existingData = null) {
+            expenseRowCounter++;
+            const rowId = expenseRowCounter;
+            const tbody = document.getElementById('expenseRowsBody');
+            
+            const row = document.createElement('tr');
+            row.id = `expense-row-${rowId}`;
+            row.className = 'border-b hover:bg-orange-50';
+            row.innerHTML = `
+                <td class="px-4 py-3">${rowId}</td>
+                <td class="px-4 py-3">
+                    <select id="expense-type-${rowId}" class="border rounded-lg px-3 py-2 w-full">
+                        <option value="כרטיס טיסה" ${existingData?.expense_type === 'כרטיס טיסה' ? 'selected' : ''}>כרטיס טיסה</option>
+                        <option value="מלון" ${existingData?.expense_type === 'מלון' ? 'selected' : ''}>מלון</option>
+                        <option value="אחר" ${existingData?.expense_type === 'אחר' ? 'selected' : ''}>אחר</option>
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" id="expense-amount-${rowId}" step="0.01" class="w-28 border rounded-lg px-3 py-2" oninput="calculateTotalExpenses()" value="${existingData?.amount || ''}">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" id="expense-notes-${rowId}" class="w-full min-w-[300px] border rounded-lg px-3 py-2" placeholder="הערות" value="${existingData?.notes || ''}">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button type="button" onclick="removeExpenseRow(${rowId})" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">✕</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function removeExpenseRow(rowId) {
+            document.getElementById(`expense-row-${rowId}`)?.remove();
+            calculateTotalExpenses();
+        }
+
+        function calculateTotalExpenses() {
+            let total = 0;
+            document.querySelectorAll('[id^="expense-amount-"]').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('totalExpensesDisplay').textContent = `$${formatNum(total)}`;
+        }
+
+        function getExpensesData() {
+            const expenses = [];
+            for (let i = 1; i <= expenseRowCounter; i++) {
+                const row = document.getElementById(`expense-row-${i}`);
+                if (row) {
+                    const amount = parseFloat(document.getElementById(`expense-amount-${i}`)?.value) || 0;
+                    if (amount > 0) {
+                        expenses.push({
+                            expense_type: document.getElementById(`expense-type-${i}`)?.value,
+                            amount: amount,
+                            notes: document.getElementById(`expense-notes-${i}`)?.value || ''
+                        });
+                    }
+                }
+            }
+            return expenses;
+        }
+
+        async function editTrip(id) { 
+            const t = trips.find(x => x.id === id); 
+            if (!t) return; 
+            document.getElementById('modalTitle').textContent = 'עריכת נסיעה'; 
+            document.getElementById('tripId').value = t.id; 
+            document.getElementById('date_from').value = t.date_from; 
+            
+            document.getElementById('expenseRowsBody').innerHTML = '';
+            expenseRowCounter = 0;
+            const tripExpenses = allExpenses.filter(e => e.trip_id === id);
+            tripExpenses.forEach(e => addExpenseRow(e));
+            calculateTotalExpenses();
+            
+            document.getElementById('tripModal').classList.remove('hidden'); 
+        }
+
+        async function saveTrip() {
+            const btn = document.getElementById('saveBtn');
+            setLoading(btn, true);
+            
+            const id = document.getElementById('tripId').value;
+            const dateFrom = document.getElementById('date_from').value;
+            
+            if (!dateFrom) {
+                showToast('יש להזין תאריך יציאה', 'error');
+                setLoading(btn, false);
+                return;
+            }
+            
+            const data = { date_from: dateFrom };
+            
+            let tripId = id;
+            
+            try {
+                if (id) {
+                    const result = await supabaseClient.from('trips').update(data).eq('id', id);
+                    if (result.error) throw result.error;
+                } else {
+                    const result = await supabaseClient.from('trips').insert([data]).select();
+                    if (result.error) throw result.error;
+                    if (result.data && result.data[0]) tripId = result.data[0].id;
+                }
+                
+                if (id) {
+                    await supabaseClient.from('trip_expenses').delete().eq('trip_id', id);
+                }
+                
+                const expenses = getExpensesData();
+                if (expenses.length > 0 && tripId) {
+                    const expensesWithTripId = expenses.map(e => ({ ...e, trip_id: tripId }));
+                    const expResult = await supabaseClient.from('trip_expenses').insert(expensesWithTripId);
+                    if (expResult.error) throw expResult.error;
+                }
+                
+                showToast(id ? 'הנסיעה עודכנה בהצלחה!' : 'הנסיעה נוספה בהצלחה!');
+                closeTripModal();
+                await loadTrips();
+            } catch (error) {
+                showToast('שגיאה: ' + error.message, 'error');
+            }
+            
+            setLoading(btn, false);
+        }
+
+        async function deleteTrip(id) {
+            if (!confirm('למחוק את הנסיעה?')) return;
+            await supabaseClient.from('trip_expenses').delete().eq('trip_id', id);
+            await supabaseClient.from('trips').delete().eq('id', id);
+            showToast('הנסיעה נמחקה');
+            await loadTrips();
+        }
+
+        function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>
