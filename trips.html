@@ -102,12 +102,12 @@
                 <table id="tripsTable" class="w-full hidden">
                     <thead class="bg-gray-800 text-white">
                         <tr>
-                            <th class="px-6 py-4 text-right">תאריך יציאה</th>
-                            <th class="px-6 py-4 text-right">כרטיס טיסה</th>
-                            <th class="px-6 py-4 text-right">מלון</th>
-                            <th class="px-6 py-4 text-right">אחר</th>
-                            <th class="px-6 py-4 text-right">סה"כ הוצאות</th>
-                            <th class="px-6 py-4 text-center">פעולות</th>
+                            <th class="px-3 py-4 text-right">תאריך יציאה</th>
+                            <th class="px-3 py-4 text-right">כרטיס טיסה</th>
+                            <th class="px-3 py-4 text-right">מלון</th>
+                            <th class="px-3 py-4 text-right">אחר</th>
+                            <th class="px-3 py-4 text-right">סה"כ הוצאות</th>
+                            <th class="px-3 py-4 text-center">פעולות</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -244,12 +244,12 @@
                 
                 return `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
-                    <td class="px-6 py-4 font-semibold">${formatDate(t.date_from)}</td>
-                    <td class="px-6 py-4 text-blue-600">$${formatNum(flight)}</td>
-                    <td class="px-6 py-4 text-purple-600">$${formatNum(hotel)}</td>
-                    <td class="px-6 py-4 text-gray-600">$${formatNum(other)}</td>
-                    <td class="px-6 py-4 font-bold text-orange-600">$${formatNum(total)}</td>
-                    <td class="px-6 py-4"><div class="flex gap-2 justify-center">
+                    <td class="px-3 py-4 font-semibold">${formatDate(t.date_from)}</td>
+                    <td class="px-3 py-4 text-blue-600">$${formatNum(flight)}</td>
+                    <td class="px-3 py-4 text-purple-600">$${formatNum(hotel)}</td>
+                    <td class="px-3 py-4 text-gray-600">$${formatNum(other)}</td>
+                    <td class="px-3 py-4 font-bold text-orange-600">$${formatNum(total)}</td>
+                    <td class="px-3 py-4"><div class="flex gap-2 justify-center">
                         <button onclick="editTrip('${t.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
                         <button onclick="deleteTrip('${t.id}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
                     </div></td>
@@ -292,7 +292,7 @@
                     <input type="number" id="expense-amount-${rowId}" step="0.01" class="w-28 border rounded-lg px-3 py-2" oninput="calculateTotalExpenses()" value="${existingData?.amount || ''}">
                 </td>
                 <td class="px-4 py-3">
-                    <input type="text" id="expense-notes-${rowId}" class="w-full border rounded-lg px-3 py-2" placeholder="הערות" value="${existingData?.notes || ''}">
+                    <input type="text" id="expense-notes-${rowId}" class="w-full min-w-[300px] border rounded-lg px-3 py-2" placeholder="הערות" value="${existingData?.notes || ''}">
                 </td>
                 <td class="px-4 py-3 text-center">
                     <button type="button" onclick="removeExpenseRow(${rowId})" class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">✕</button>

@@ -127,14 +127,14 @@
                 <table id="productsTable" class="w-full hidden">
                     <thead class="bg-gray-800 text-white">
                         <tr>
-                            <th class="px-4 py-3 text-right">תאריך</th>
-                            <th class="px-4 py-3 text-right">ספק</th>
-                            <th class="px-4 py-3 text-right">פריטים</th>
-                            <th class="px-4 py-3 text-right">סה"כ כמות</th>
-                            <th class="px-4 py-3 text-right">סה"כ לתשלום</th>
-                            <th class="px-4 py-3 text-right">שולם</th>
-                            <th class="px-4 py-3 text-right">יתרה</th>
-                            <th class="px-4 py-3 text-center">פעולות</th>
+                            <th class="px-2 py-3 text-right">תאריך</th>
+                            <th class="px-2 py-3 text-right">ספק</th>
+                            <th class="px-2 py-3 text-right">פריטים</th>
+                            <th class="px-2 py-3 text-right">סה"כ כמות</th>
+                            <th class="px-2 py-3 text-right">סה"כ לתשלום</th>
+                            <th class="px-2 py-3 text-right">שולם</th>
+                            <th class="px-2 py-3 text-right">יתרה</th>
+                            <th class="px-2 py-3 text-center">פעולות</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -157,18 +157,18 @@
                 <input type="hidden" id="currentProductIndex" value="-1">
                 
                 <!-- פרטי רכישה בסיסיים -->
-                <div class="grid grid-cols-3 gap-3 mb-4">
-                    <div>
+                <div class="grid grid-cols-4 gap-3 mb-4">
+                    <div class="col-span-1">
                         <label class="block text-gray-600 text-xs mb-1">תאריך נסיעה</label>
-                        <input type="date" id="product_date" class="w-full border border-gray-200 rounded-lg compact-input">
+                        <input type="date" id="product_date" class="w-24 border border-gray-200 rounded-lg compact-input">
                     </div>
-                    <div>
+                    <div class="col-span-1">
                         <label class="block text-gray-600 text-xs mb-1">ספק</label>
-                        <select id="supplier_id" class="w-full border border-gray-200 rounded-lg compact-input">
+                        <select id="supplier_id" class="w-24 border border-gray-200 rounded-lg compact-input">
                             <option value="">בחר ספק...</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="col-span-2">
                         <label class="block text-gray-600 text-xs mb-1">הערות</label>
                         <input type="text" id="notes" class="w-full border border-gray-200 rounded-lg compact-input">
                     </div>
@@ -184,9 +184,9 @@
                         <thead class="bg-green-100">
                             <tr>
                                 <th class="text-right w-8">#</th>
-                                <th class="text-right">סוג שיער</th>
-                                <th class="text-right w-20">כמות (ק"ג)</th>
-                                <th class="text-right w-24">מחיר לק"ג ($)</th>
+                                <th class="text-right w-16">סוג שיער</th>
+                                <th class="text-right w-28">כמות (ק"ג)</th>
+                                <th class="text-right w-28">מחיר לק"ג ($)</th>
                                 <th class="text-right w-24">סה"כ ($)</th>
                                 <th class="text-center w-8">X</th>
                             </tr>
@@ -214,10 +214,10 @@
                         <thead class="bg-purple-100">
                             <tr>
                                 <th class="text-right w-8">#</th>
-                                <th class="text-right">תאריך</th>
-                                <th class="text-right w-20">סכום ($)</th>
+                                <th class="text-right w-24">תאריך</th>
+                                <th class="text-right w-28">סכום ($)</th>
                                 <th class="text-right">אמצעי תשלום</th>
-                                <th class="text-right">אסמכתא</th>
+                                <th class="text-right w-16">אסמכתא</th>
                                 <th class="text-center w-8">X</th>
                             </tr>
                         </thead>
@@ -356,14 +356,14 @@
                 
                 return `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50 cursor-pointer" onclick="openProductModal('${p.id}')">
-                    <td class="px-4 py-3">${formatDate(p.product_date)}</td>
-                    <td class="px-4 py-3 font-semibold">${p.suppliers?.name || ''}</td>
-                    <td class="px-4 py-3">${itemsCount} פריטים</td>
-                    <td class="px-4 py-3">${totalQty.toLocaleString()} ק"ג</td>
-                    <td class="px-4 py-3 font-bold">$${formatNumber(totalAmount)}</td>
-                    <td class="px-4 py-3 text-green-600">$${formatNumber(totalPaid)}</td>
-                    <td class="px-4 py-3 font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}">$${formatNumber(balance)}</td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-2 py-3">${formatDate(p.product_date)}</td>
+                    <td class="px-2 py-3 font-semibold">${p.suppliers?.name || ''}</td>
+                    <td class="px-2 py-3">${itemsCount} פריטים</td>
+                    <td class="px-2 py-3">${totalQty.toLocaleString()} ק"ג</td>
+                    <td class="px-2 py-3 font-bold">$${formatNumber(totalAmount)}</td>
+                    <td class="px-2 py-3 text-green-600">$${formatNumber(totalPaid)}</td>
+                    <td class="px-2 py-3 font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}">$${formatNumber(balance)}</td>
+                    <td class="px-2 py-3 text-center">
                         <button onclick="event.stopPropagation(); openProductModal('${p.id}')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">עריכה</button>
                     </td>
                 </tr>

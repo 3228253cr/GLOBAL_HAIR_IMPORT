@@ -14,66 +14,17 @@
         .toast.success { background: #10B981; }
         .toast.error { background: #EF4444; }
         @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
         .main-content { margin-right: 200px; }
         .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
         .nav-item:hover { background: rgba(255,255,255,0.1); }
         .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
-        /* lookmannage styles */
-        .compact-table th, .compact-table td { padding: 8px 12px; white-space: nowrap; }
-        .compact-table { width: auto; }
-        .icon-btn { width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-        .icon-btn:hover { transform: scale(1.1); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="toastContainer"></div>
-
-    <!-- מודאל עריכה/הוספה -->
-    <div id="modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 id="modalTitle" class="text-xl font-bold mb-4">הוספת ספק חדש</h3>
-            <form id="supplierForm" onsubmit="saveSupplier(event)">
-                <input type="hidden" id="supplierId">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1 text-sm">שם הספק *</label>
-                        <input type="text" id="name" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1 text-sm">איש קשר</label>
-                            <input type="text" id="contact_name" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1 text-sm">טלפון</label>
-                            <input type="text" id="phone" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1 text-sm">אימייל</label>
-                            <input type="email" id="email" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1 text-sm">מדינה</label>
-                            <input type="text" id="country" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1 text-sm">הערות</label>
-                        <textarea id="notes" rows="2" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:border-yellow-500 focus:outline-none"></textarea>
-                    </div>
-                </div>
-                <div class="flex gap-3 mt-6">
-                    <button type="submit" id="saveBtn" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">שמור</button>
-                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 transition">ביטול</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- סרגל צד קבוע -->
     <aside class="sidebar bg-gray-800 shadow-xl">
@@ -116,14 +67,6 @@
                 <span>🧾</span>
                 <span>חשבוניות</span>
             </a>
-            <a href="inventory.html" class="nav-item">
-                <span>📦</span>
-                <span>מלאי</span>
-            </a>
-            <a href="agents-management.html" class="nav-item">
-                <span>🤝</span>
-                <span>סוכנים</span>
-            </a>
             <a href="reports.html" class="nav-item">
                 <span>📈</span>
                 <span>דוחות</span>
@@ -146,30 +89,67 @@
     <!-- תוכן ראשי -->
     <div class="main-content">
         <main class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800">ניהול ספקים</h2>
-                    <p class="text-gray-500 text-sm">ניהול כל הספקים במערכת</p>
-                </div>
-                <button onclick="openModal()" class="gold-gradient text-white px-4 py-2 rounded-lg hover:opacity-90 transition shadow-lg text-sm">+ הוסף ספק</button>
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">ניהול ספקים</h2>
+                <p class="text-gray-500">ניהול כל הספקים במערכת</p>
             </div>
+            <button onclick="showAddForm()" class="gold-gradient text-white px-6 py-3 rounded-xl hover:opacity-90 transition shadow-lg">+ הוסף ספק חדש</button>
+        </div>
 
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden inline-block">
-                <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
-                <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין ספקים במערכת</div>
-                <table id="suppliersTable" class="compact-table hidden">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="text-right">שם הספק</th>
-                            <th class="text-right">איש קשר</th>
-                            <th class="text-right">טלפון</th>
-                            <th class="text-right">מדינה</th>
-                            <th class="text-center">פעולות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
+        <div id="formContainer" class="bg-white rounded-2xl shadow-lg p-6 mb-8 hidden">
+            <h3 id="formTitle" class="text-2xl font-bold mb-6">הוספת ספק חדש</h3>
+            <form id="supplierForm" onsubmit="saveSupplier(event)">
+                <input type="hidden" id="supplierId">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">שם הספק *</label>
+                        <input type="text" id="name" required class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">איש קשר</label>
+                        <input type="text" id="contact_name" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">טלפון</label>
+                        <input type="text" id="phone" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">אימייל</label>
+                        <input type="email" id="email" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">מדינה</label>
+                        <input type="text" id="country" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">הערות</label>
+                    <textarea id="notes" rows="2" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-yellow-500 focus:outline-none"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" id="saveBtn" class="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 transition">שמור</button>
+                    <button type="button" onclick="hideForm()" class="bg-gray-400 text-white px-8 py-3 rounded-xl hover:bg-gray-500 transition">ביטול</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div id="loading" class="p-8 text-center text-gray-500">טוען נתונים...</div>
+            <div id="emptyMessage" class="p-8 text-center text-gray-500 hidden">אין ספקים במערכת</div>
+            <table id="suppliersTable" class="w-full hidden">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-9 py-4 text-right">שם הספק</th>
+                        <th class="px-9 py-4 text-right">איש קשר</th>
+                        <th class="px-9 py-4 text-right">טלפון</th>
+                        <th class="px-9 py-4 text-right">מדינה</th>
+                        <th class="px-9 py-4 text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
         </main>
     </div>
 
@@ -188,26 +168,9 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        function openModal(supplier = null) {
-            document.getElementById('modal').classList.remove('hidden');
-            document.getElementById('supplierForm').reset();
-            if (supplier) {
-                document.getElementById('modalTitle').textContent = 'עריכת ספק';
-                document.getElementById('supplierId').value = supplier.id;
-                document.getElementById('name').value = supplier.name || '';
-                document.getElementById('contact_name').value = supplier.contact_name || '';
-                document.getElementById('phone').value = supplier.phone || '';
-                document.getElementById('email').value = supplier.email || '';
-                document.getElementById('country').value = supplier.country || '';
-                document.getElementById('notes').value = supplier.notes || '';
-            } else {
-                document.getElementById('modalTitle').textContent = 'הוספת ספק חדש';
-                document.getElementById('supplierId').value = '';
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.add('hidden');
+        function setLoading(btn, loading) {
+            if (loading) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> שומר...'; }
+            else { btn.disabled = false; btn.innerHTML = 'שמור'; }
         }
 
         window.onload = function() {
@@ -238,30 +201,40 @@
             document.getElementById('suppliersTable').classList.remove('hidden');
             document.getElementById('tableBody').innerHTML = suppliers.map((s, i) => `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-yellow-50">
-                    <td class="font-semibold">${s.name || ''}</td>
-                    <td>${s.contact_name || '-'}</td>
-                    <td>${s.phone || '-'}</td>
-                    <td>${s.country || '-'}</td>
-                    <td>
-                        <div class="flex gap-1 justify-center">
-                            <span onclick='editSupplier("${s.id}")' class="icon-btn bg-blue-100 text-blue-600" title="עריכה">✏️</span>
-                            <span onclick='deleteSupplier("${s.id}")' class="icon-btn bg-red-100 text-red-600" title="מחיקה">🗑️</span>
+                    <td class="px-9 py-4 font-semibold">${s.name || ''}</td>
+                    <td class="px-9 py-4">${s.contact_name || ''}</td>
+                    <td class="px-9 py-4">${s.phone || ''}</td>
+                    <td class="px-9 py-4">${s.country || ''}</td>
+                    <td class="px-9 py-4">
+                        <div class="flex gap-2 justify-center">
+                            <button onclick='editSupplier("${s.id}")' class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">עריכה</button>
+                            <button onclick='deleteSupplier("${s.id}")' class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">מחיקה</button>
                         </div>
                     </td>
                 </tr>
             `).join('');
         }
 
+        function showAddForm() { document.getElementById('formContainer').classList.remove('hidden'); document.getElementById('formTitle').textContent = 'הוספת ספק חדש'; document.getElementById('supplierId').value = ''; document.getElementById('supplierForm').reset(); }
+        function hideForm() { document.getElementById('formContainer').classList.add('hidden'); }
         function editSupplier(id) { 
             const s = suppliers.find(x => x.id === id); 
-            if (s) openModal(s);
+            if (!s) return; 
+            document.getElementById('formTitle').textContent = 'עריכת ספק'; 
+            document.getElementById('supplierId').value = s.id; 
+            document.getElementById('name').value = s.name || ''; 
+            document.getElementById('contact_name').value = s.contact_name || ''; 
+            document.getElementById('phone').value = s.phone || ''; 
+            document.getElementById('email').value = s.email || ''; 
+            document.getElementById('country').value = s.country || ''; 
+            document.getElementById('notes').value = s.notes || ''; 
+            document.getElementById('formContainer').classList.remove('hidden'); 
         }
 
         async function saveSupplier(event) {
             event.preventDefault();
             const btn = document.getElementById('saveBtn');
-            btn.disabled = true;
-            btn.textContent = 'שומר...';
+            setLoading(btn, true);
             
             const id = document.getElementById('supplierId').value;
             const data = { 
@@ -281,19 +254,19 @@
                 if (result.error) throw result.error;
                 
                 showToast(id ? 'הספק עודכן בהצלחה!' : 'הספק נוסף בהצלחה!');
-                closeModal();
-                loadSuppliers();
+                hideForm();
+                setTimeout(() => location.reload(), 500);
             } catch (error) {
                 showToast('שגיאה: ' + error.message, 'error');
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'שמור';
+                setLoading(btn, false);
             }
         }
 
         async function deleteSupplier(id) { 
             if (!confirm('למחוק את הספק?')) return; 
             
+            // בדיקה אם יש מוצרים לספק
             const { data: products } = await supabaseClient.from('products').select('id').eq('supplier_id', id);
             if (products && products.length > 0) {
                 showToast('לא ניתן למחוק ספק עם מוצרים קיימים! (' + products.length + ' מוצרים)', 'error');
@@ -302,15 +275,9 @@
             
             await supabaseClient.from('suppliers').delete().eq('id', id); 
             showToast('הספק נמחק'); 
-            loadSuppliers();
+            setTimeout(() => location.reload(), 500); 
         }
-
         function logout() { localStorage.clear(); sessionStorage.clear(); window.location.href = 'index.html'; }
-
-        // סגירת מודאל בלחיצה מחוץ
-        document.getElementById('modal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
     </script>
 </body>
 </html>

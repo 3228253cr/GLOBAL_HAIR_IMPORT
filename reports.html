@@ -149,10 +149,10 @@
                     <table class="w-full">
                         <thead class="bg-gray-800 text-white">
                             <tr>
-                                <th class="px-6 py-4 text-right">תאריך</th>
-                                <th class="px-6 py-4 text-right">שם מוצר</th>
-                                <th class="px-6 py-4 text-right">כמות</th>
-                                <th class="px-6 py-4 text-right">סה"כ</th>
+                                <th class="px-3 py-4 text-right">תאריך</th>
+                                <th class="px-3 py-4 text-right">שם מוצר</th>
+                                <th class="px-3 py-4 text-right">כמות</th>
+                                <th class="px-3 py-4 text-right">סה"כ</th>
                             </tr>
                         </thead>
                         <tbody id="reportBySupplierBody"></tbody>
@@ -700,10 +700,10 @@
             
             tbody.innerHTML = data.map((p, i) => `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-                    <td class="px-6 py-4">${p.product_date || ''}</td>
-                    <td class="px-6 py-4">${p.product_type || ''}</td>
-                    <td class="px-6 py-4">${(p.quantity || 0).toLocaleString()}</td>
-                    <td class="px-6 py-4 font-bold">$${formatNumber(parseFloat(p.total_price) || 0)}</td>
+                    <td class="px-3 py-4">${formatDateDDMMYY(p.product_date)}</td>
+                    <td class="px-3 py-4">${p.product_type || ''}</td>
+                    <td class="px-3 py-4">${(p.quantity || 0).toLocaleString()}</td>
+                    <td class="px-3 py-4 font-bold">$${formatNumber(parseFloat(p.total_price) || 0)}</td>
                 </tr>
             `).join('');
         }
