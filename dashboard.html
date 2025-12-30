@@ -12,7 +12,7 @@
         .gold-gradient { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
         .sidebar { width: 200px; min-height: 100vh; position: fixed; right: 0; top: 0; }
         .main-content { margin-right: 200px; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: white; transition: all 0.3s; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 16px; color: white; transition: all 0.3s; font-size: 14px; }
         .nav-item:hover { background: rgba(255,255,255,0.1); }
         .nav-item.active { background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #e6c84b 100%); }
     </style>
@@ -78,9 +78,9 @@
             </a>
         </nav>
         
-        <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
-            <div class="text-gray-400 text-sm mb-2" id="welcomeUser"></div>
-            <button onclick="logout()" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2">
+        <div class="absolute bottom-0 w-full p-2 border-t border-gray-700">
+            <div class="text-gray-400 text-xs mb-1" id="welcomeUser"></div>
+            <button onclick="logout()" class="w-full bg-red-500 text-white py-1.5 rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2 text-sm">
                 <span>🚪</span>
                 <span>התנתק</span>
             </button>
@@ -216,10 +216,13 @@
                     supabaseClient.from('customers').select('id', { count: 'exact' }),
                     supabaseClient.from('orders').select('*'),
                     supabaseClient.from('payments').select('*'),
-                    supabaseClient.from('agent_sales').select('total_amount, quantity_sold, quantity_returned'),
+                    supabaseClient.from('agent_sales').select('*'),
                     supabaseClient.from('agent_inventory').select('quantity_received'),
                     supabaseClient.from('order_items').select('quantity')
                 ]);
+                
+                console.log('Agent Sales:', agentSales);
+                console.log('Agent Inventory:', agentInventory);
 
                 document.getElementById('suppliersCount').textContent = suppliers.count || 0;
                 document.getElementById('productsCount').textContent = products.data?.length || 0;
@@ -242,9 +245,11 @@
                 
                 // מכירות סוכנים
                 let agentsSalesUSD = 0;
-                (agentSales.data || []).forEach(s => {
-                    agentsSalesUSD += parseFloat(s.total_amount) || 0;
-                });
+                if (agentSales.data && agentSales.data.length > 0) {
+                    agentSales.data.forEach(s => {
+                        agentsSalesUSD += parseFloat(s.total_amount) || 0;
+                    });
+                }
                 
                 // סה"כ מכירות
                 const totalSalesUSD = officeSalesUSD + agentsSalesUSD;
@@ -269,17 +274,21 @@
                 
                 // מלאי שנמכר לסוכנים (מטבלת agent_inventory)
                 let soldToAgentsQty = 0;
-                (agentInventory.data || []).forEach(inv => {
-                    soldToAgentsQty += parseFloat(inv.quantity_received) || 0;
-                });
+                if (agentInventory.data && agentInventory.data.length > 0) {
+                    agentInventory.data.forEach(inv => {
+                        soldToAgentsQty += parseFloat(inv.quantity_received) || 0;
+                    });
+                }
                 
                 // מלאי שהסוכנים מכרו ללקוחות (כמות סופית = נשלח - הוחזר)
                 let agentsSoldQty = 0;
-                (agentSales.data || []).forEach(s => {
-                    const sold = parseFloat(s.quantity_sold) || 0;
-                    const returned = parseFloat(s.quantity_returned) || 0;
-                    agentsSoldQty += (sold - returned);
-                });
+                if (agentSales.data && agentSales.data.length > 0) {
+                    agentSales.data.forEach(s => {
+                        const sold = parseFloat(s.quantity_sold) || 0;
+                        const returned = parseFloat(s.quantity_returned) || 0;
+                        agentsSoldQty += (sold - returned);
+                    });
+                }
                 
                 // יתרה במלאי = נרכש - נמכר למשרד - נמכר לסוכנים
                 const remainingStock = totalPurchased - officeSoldQty - soldToAgentsQty;
