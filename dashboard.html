@@ -203,7 +203,7 @@
                     supabaseClient.from('customers').select('id', { count: 'exact' }),
                     supabaseClient.from('orders').select('*'),
                     supabaseClient.from('payments').select('*'),
-                    supabaseClient.from('agent_sales').select('quantity_sold, quantity_returned, total_amount, price_per_unit')
+                    supabaseClient.from('agent_sales').select('total_amount')
                 ]);
 
                 document.getElementById('suppliersCount').textContent = suppliers.count || 0;
@@ -219,13 +219,10 @@
                     directOrdersUSD += parseFloat(o.total_amount) || 0;
                 });
                 
-                // חישוב מכירות סוכנים (לפי כמות סופית = נשלח - הוחזר)
+                // חישוב מכירות סוכנים - לוקח total_amount ישירות
                 let agentsSalesUSD = 0;
                 (agentSales.data || []).forEach(s => {
-                    const sent = parseFloat(s.quantity_sold) || 0;
-                    const returned = parseFloat(s.quantity_returned) || 0;
-                    const price = parseFloat(s.price_per_unit) || 0;
-                    agentsSalesUSD += (sent - returned) * price;
+                    agentsSalesUSD += parseFloat(s.total_amount) || 0;
                 });
                 
                 // סה"כ = הזמנות + מכירות סוכנים
