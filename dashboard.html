@@ -143,30 +143,19 @@
 
                 <!-- סיכום יתרות - חצי רוחב במרכז -->
                 <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">סיכום כספי</h3>
-                    <div class="grid grid-cols-3 gap-3 mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">סיכום מכירות</h3>
+                    <div class="grid grid-cols-3 gap-3">
                         <div class="bg-blue-50 rounded-lg p-3 text-center">
-                            <p class="text-blue-600 text-xs">סה"כ הזמנות + סוכנים</p>
-                            <p id="totalOrders" class="text-xl font-bold text-blue-800">$0</p>
+                            <p class="text-blue-600 text-xs">📋 מכירות משרד</p>
+                            <p id="officeSales" class="text-xl font-bold text-blue-800">$0</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-3 text-center">
+                            <p class="text-purple-600 text-xs">🤝 מכירות סוכנים</p>
+                            <p id="agentsSales" class="text-xl font-bold text-purple-800">$0</p>
                         </div>
                         <div class="bg-green-50 rounded-lg p-3 text-center">
-                            <p class="text-green-600 text-xs">סה"כ שולם</p>
-                            <p id="totalPaid" class="text-xl font-bold text-green-800">$0</p>
-                        </div>
-                        <div class="bg-red-50 rounded-lg p-3 text-center">
-                            <p class="text-red-600 text-xs">יתרה לגבייה</p>
-                            <p id="totalBalance" class="text-xl font-bold text-red-800">$0</p>
-                        </div>
-                    </div>
-                    <!-- פירוט -->
-                    <div class="grid grid-cols-2 gap-3 pt-3 border-t">
-                        <div class="bg-gray-50 rounded-lg p-2 text-center">
-                            <p class="text-gray-500 text-xs">📋 הזמנות ישירות</p>
-                            <p id="directOrders" class="text-lg font-bold text-gray-700">$0</p>
-                        </div>
-                        <div class="bg-purple-50 rounded-lg p-2 text-center">
-                            <p class="text-purple-500 text-xs">🤝 מכירות סוכנים</p>
-                            <p id="agentsSales" class="text-lg font-bold text-purple-700">$0</p>
+                            <p class="text-green-600 text-xs">💰 סיכום מכירות</p>
+                            <p id="totalSales" class="text-xl font-bold text-green-800">$0</p>
                         </div>
                     </div>
                 </div>
@@ -213,38 +202,30 @@
                 const openOrders = (orders.data || []).filter(o => o.status !== 'הושלם' && o.status !== 'בוטל');
                 document.getElementById('ordersCount').textContent = openOrders.length;
 
-                // חישוב הזמנות ישירות בדולר
-                let directOrdersUSD = 0;
-                (orders.data || []).forEach(o => {
-                    directOrdersUSD += parseFloat(o.total_amount) || 0;
+                // מכירות משרד = תשלומים שהתקבלו (המרה לדולר)
+                let officeSalesUSD = 0;
+                (payments.data || []).forEach(p => {
+                    if (p.currency === 'USD') {
+                        officeSalesUSD += parseFloat(p.amount) || 0;
+                    } else {
+                        // שקלים - המרה לדולר
+                        officeSalesUSD += (parseFloat(p.amount) || 0) / exchangeRate;
+                    }
                 });
                 
-                // חישוב מכירות סוכנים - לוקח total_amount ישירות
+                // מכירות סוכנים
                 let agentsSalesUSD = 0;
                 (agentSales.data || []).forEach(s => {
                     agentsSalesUSD += parseFloat(s.total_amount) || 0;
                 });
                 
-                // סה"כ = הזמנות + מכירות סוכנים
-                const totalAmountUSD = directOrdersUSD + agentsSalesUSD;
-                
-                // חישוב תשלומים - המרה לדולר
-                let totalPaidUSD = 0;
-                (payments.data || []).forEach(p => {
-                    if (p.currency === 'USD') {
-                        totalPaidUSD += parseFloat(p.amount) || 0;
-                    } else {
-                        // שקלים - המרה לדולר
-                        totalPaidUSD += (parseFloat(p.amount) || 0) / exchangeRate;
-                    }
-                });
+                // סה"כ מכירות = משרד + סוכנים
+                const totalSalesUSD = officeSalesUSD + agentsSalesUSD;
                 
                 // עדכון התצוגה
-                document.getElementById('directOrders').textContent = '$' + directOrdersUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                document.getElementById('officeSales').textContent = '$' + officeSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                 document.getElementById('agentsSales').textContent = '$' + agentsSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
-                document.getElementById('totalOrders').textContent = '$' + totalAmountUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
-                document.getElementById('totalPaid').textContent = '$' + totalPaidUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
-                document.getElementById('totalBalance').textContent = '$' + (totalAmountUSD - totalPaidUSD).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                document.getElementById('totalSales').textContent = '$' + totalSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                 
             } catch (error) {
                 console.error('שגיאה בטעינת נתונים:', error);
