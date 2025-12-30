@@ -68,6 +68,7 @@
             </div>
 
             <div id="saleForm" class="hidden bg-gray-50 p-4 rounded-lg mb-4">
+                <input type="hidden" id="editSaleId">
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="block text-gray-700 text-sm mb-1">תאריך</label>
@@ -78,12 +79,27 @@
                         <input type="text" id="customerName" class="w-full px-3 py-2 border rounded-lg" placeholder="שם הלקוח">
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-sm mb-1">כמות (גרם)</label>
-                        <input type="number" id="saleQty" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                        <label class="block text-gray-700 text-sm mb-1">כמות נשלחה (גרם)</label>
+                        <input type="number" id="saleQty" class="w-full px-3 py-2 border rounded-lg" placeholder="0" oninput="calcFinalQty()">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm mb-1">מחיר לגרם ($)</label>
-                        <input type="number" step="0.01" id="salePrice" class="w-full px-3 py-2 border rounded-lg" placeholder="0">
+                        <input type="number" step="0.01" id="salePrice" class="w-full px-3 py-2 border rounded-lg" placeholder="0" oninput="calcFinalQty()">
+                    </div>
+                </div>
+                <!-- שדות החזרה אחרי חפיפה -->
+                <div class="grid grid-cols-2 gap-3 mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div>
+                        <label class="block text-yellow-700 text-sm mb-1">🔄 הוחזר אחרי חפיפה (גרם)</label>
+                        <input type="number" id="returnedQty" class="w-full px-3 py-2 border border-yellow-300 rounded-lg" placeholder="0" oninput="calcFinalQty()">
+                    </div>
+                    <div>
+                        <label class="block text-green-700 text-sm mb-1">✅ כמות סופית (גרם)</label>
+                        <input type="number" id="finalQty" class="w-full px-3 py-2 border rounded-lg bg-green-50 font-bold" readonly>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-green-700 text-sm mb-1">💰 סה"כ לתשלום ($)</label>
+                        <input type="text" id="finalTotal" class="w-full px-3 py-2 border rounded-lg bg-green-100 font-bold text-green-700" readonly>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -103,9 +119,11 @@
                         <tr>
                             <th class="px-2 py-2 text-right">תאריך</th>
                             <th class="px-2 py-2 text-right">לקוח</th>
-                            <th class="px-2 py-2 text-right">כמות</th>
+                            <th class="px-2 py-2 text-right">נשלח</th>
+                            <th class="px-2 py-2 text-right">הוחזר</th>
+                            <th class="px-2 py-2 text-right">סופי</th>
                             <th class="px-2 py-2 text-right">סה"כ</th>
-                            <th class="px-2 py-2"></th>
+                            <th class="px-2 py-2">פעולות</th>
                         </tr>
                     </thead>
                     <tbody id="salesTable"></tbody>
@@ -162,6 +180,7 @@
         });
 
         document.getElementById('cancelSaleBtn').addEventListener('click', function() {
+            resetSaleForm();
             document.getElementById('saleForm').classList.add('hidden');
             document.getElementById('toggleSaleBtn').classList.remove('hidden');
         });
@@ -178,14 +197,22 @@
         // סטטיסטיקות
         async function loadStats() {
             const { data: inv } = await supabase.from('agent_inventory').select('quantity_received, total_expected').eq('agent_id', agent.id);
-            const { data: sales } = await supabase.from('agent_sales').select('quantity_sold').eq('agent_id', agent.id);
+            const { data: sales } = await supabase.from('agent_sales').select('quantity_sold, quantity_returned').eq('agent_id', agent.id);
 
-            let received = 0, expected = 0, sold = 0;
+            let received = 0, expected = 0, sold = 0, returned = 0;
             if (inv) inv.forEach(i => { received += Number(i.quantity_received) || 0; expected += Number(i.total_expected) || 0; });
-            if (sales) sales.forEach(s => { sold += Number(s.quantity_sold) || 0; });
+            if (sales) sales.forEach(s => { 
+                sold += Number(s.quantity_sold) || 0; 
+                returned += Number(s.quantity_returned) || 0;
+            });
+            
+            // המלאי הנוכחי = התקבל - נמכר + הוחזר (כי מה שהוחזר חזר למלאי)
+            const currentInventory = received - sold + returned;
+            // כמות שנמכרה בפועל = נשלח - הוחזר
+            const actualSold = sold - returned;
 
-            document.getElementById('statInventory').textContent = (received - sold).toLocaleString();
-            document.getElementById('statSold').textContent = sold.toLocaleString();
+            document.getElementById('statInventory').textContent = currentInventory.toLocaleString();
+            document.getElementById('statSold').textContent = actualSold.toLocaleString();
             document.getElementById('statPrice').textContent = '$' + (received > 0 ? (expected / received).toFixed(2) : '0.00');
             document.getElementById('statOwed').textContent = '$' + expected.toFixed(2);
         }
@@ -196,19 +223,30 @@
             const tbody = document.getElementById('salesTable');
             
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">אין מכירות</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">אין מכירות</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = data.map(s => `
+            tbody.innerHTML = data.map(s => {
+                const sent = Number(s.quantity_sold) || 0;
+                const returned = Number(s.quantity_returned) || 0;
+                const final = sent - returned;
+                const finalAmount = final * (Number(s.price_per_unit) || 0);
+                
+                return `
                 <tr class="border-b">
                     <td class="px-2 py-2">${new Date(s.sale_date).toLocaleDateString('he-IL')}</td>
                     <td class="px-2 py-2">${s.customer_name}</td>
-                    <td class="px-2 py-2">${s.quantity_sold}</td>
-                    <td class="px-2 py-2 text-green-600 font-bold">$${Number(s.total_amount).toFixed(2)}</td>
-                    <td class="px-2 py-2"><button onclick="deleteSale('${s.id}')" class="text-red-500">🗑️</button></td>
+                    <td class="px-2 py-2">${sent}</td>
+                    <td class="px-2 py-2 ${returned > 0 ? 'text-red-500 font-bold' : ''}">${returned > 0 ? returned : '-'}</td>
+                    <td class="px-2 py-2 text-green-600 font-bold">${final}</td>
+                    <td class="px-2 py-2 text-green-600 font-bold">$${finalAmount.toFixed(2)}</td>
+                    <td class="px-2 py-2">
+                        <button onclick="editSale('${s.id}')" class="text-blue-500 mr-1">✏️</button>
+                        <button onclick="deleteSale('${s.id}')" class="text-red-500">🗑️</button>
+                    </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         // מלאי
@@ -231,42 +269,102 @@
             `).join('');
         }
 
-        // שמירת מכירה
+        // שמירת מכירה (חדשה או עריכה)
         async function saveSale() {
+            const editId = document.getElementById('editSaleId').value;
             const customer = document.getElementById('customerName').value.trim();
             const qty = parseFloat(document.getElementById('saleQty').value) || 0;
             const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const returned = parseFloat(document.getElementById('returnedQty').value) || 0;
             const date = document.getElementById('saleDate').value;
             const notes = document.getElementById('saleNotes').value.trim();
+            
+            const finalQty = qty - returned;
+            const finalAmount = finalQty * price;
 
             if (!customer || qty <= 0) {
                 showToast('נא למלא שם לקוח וכמות', 'error');
                 return;
             }
+            
+            if (returned > qty) {
+                showToast('כמות שהוחזרה לא יכולה להיות גדולה מהכמות שנשלחה', 'error');
+                return;
+            }
 
-            const { error } = await supabase.from('agent_sales').insert({
+            const saleData = {
                 agent_id: agent.id,
                 customer_name: customer,
                 quantity_sold: qty,
+                quantity_returned: returned,
                 price_per_unit: price,
-                total_amount: qty * price,
+                total_amount: finalAmount,
                 sale_date: date,
                 notes: notes
-            });
+            };
+
+            let error;
+            if (editId) {
+                // עריכה
+                const result = await supabase.from('agent_sales').update(saleData).eq('id', editId);
+                error = result.error;
+            } else {
+                // חדש
+                const result = await supabase.from('agent_sales').insert(saleData);
+                error = result.error;
+            }
 
             if (error) {
                 showToast('שגיאה בשמירה', 'error');
                 return;
             }
 
-            showToast('המכירה נשמרה!', 'success');
-            document.getElementById('customerName').value = '';
-            document.getElementById('saleQty').value = '';
-            document.getElementById('salePrice').value = '';
-            document.getElementById('saleNotes').value = '';
+            showToast(editId ? 'המכירה עודכנה!' : 'המכירה נשמרה!', 'success');
+            resetSaleForm();
             document.getElementById('saleForm').classList.add('hidden');
             document.getElementById('toggleSaleBtn').classList.remove('hidden');
             loadAll();
+        }
+        
+        // עריכת מכירה קיימת
+        async function editSale(saleId) {
+            const { data } = await supabase.from('agent_sales').select('*').eq('id', saleId).single();
+            if (!data) return;
+            
+            document.getElementById('editSaleId').value = saleId;
+            document.getElementById('saleDate').value = data.sale_date || '';
+            document.getElementById('customerName').value = data.customer_name || '';
+            document.getElementById('saleQty').value = data.quantity_sold || '';
+            document.getElementById('salePrice').value = data.price_per_unit || '';
+            document.getElementById('returnedQty').value = data.quantity_returned || '';
+            document.getElementById('saleNotes').value = data.notes || '';
+            
+            calcFinalQty();
+            
+            document.getElementById('saleForm').classList.remove('hidden');
+            document.getElementById('toggleSaleBtn').classList.add('hidden');
+        }
+        
+        // חישוב כמות סופית
+        function calcFinalQty() {
+            const qty = parseFloat(document.getElementById('saleQty').value) || 0;
+            const returned = parseFloat(document.getElementById('returnedQty').value) || 0;
+            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const final = qty - returned;
+            document.getElementById('finalQty').value = final;
+            document.getElementById('finalTotal').value = '$' + (final * price).toFixed(2);
+        }
+        
+        // איפוס טופס
+        function resetSaleForm() {
+            document.getElementById('editSaleId').value = '';
+            document.getElementById('customerName').value = '';
+            document.getElementById('saleQty').value = '';
+            document.getElementById('salePrice').value = '';
+            document.getElementById('returnedQty').value = '';
+            document.getElementById('finalQty').value = '';
+            document.getElementById('finalTotal').value = '';
+            document.getElementById('saleNotes').value = '';
         }
 
         // מחיקת מכירה

@@ -224,6 +224,52 @@
                             <option value="">כל הסוכנים</option>
                         </select>
                     </div>
+                    
+                    <!-- טופס עריכת מכירה -->
+                    <div id="editSaleForm" class="hidden bg-yellow-50 p-6 rounded-xl mb-6 border-2 border-yellow-200">
+                        <h3 class="text-lg font-bold mb-4">✏️ עריכת מכירה</h3>
+                        <input type="hidden" id="editSaleId">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">תאריך</label>
+                                <input type="date" id="editSaleDate" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">לקוח</label>
+                                <input type="text" id="editCustomerName" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">כמות נשלחה (גרם)</label>
+                                <input type="number" id="editSaleQty" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3" oninput="calcEditSaleTotal()">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">מחיר לגרם ($)</label>
+                                <input type="number" step="0.01" id="editSalePrice" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3" oninput="calcEditSaleTotal()">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-yellow-700 font-medium mb-2">🔄 הוחזר אחרי חפיפה</label>
+                                <input type="number" id="editReturnedQty" class="w-full border-2 border-yellow-300 rounded-xl px-4 py-3 bg-yellow-50" oninput="calcEditSaleTotal()">
+                            </div>
+                            <div>
+                                <label class="block text-green-700 font-medium mb-2">✅ כמות סופית</label>
+                                <input type="number" id="editFinalQty" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-green-50 font-bold" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-green-700 font-medium mb-2">💰 סה"כ לתשלום</label>
+                                <input type="text" id="editSaleTotal" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-green-100 font-bold" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">הערות</label>
+                                <input type="text" id="editSaleNotes" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="updateSale()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">💾 שמור</button>
+                            <button onclick="hideEditSaleForm()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">ביטול</button>
+                        </div>
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full">
@@ -232,20 +278,22 @@
                                     <th class="px-4 py-3 text-right">תאריך</th>
                                     <th class="px-4 py-3 text-right">סוכן</th>
                                     <th class="px-4 py-3 text-right">לקוח</th>
-                                    <th class="px-4 py-3 text-right">כמות</th>
-                                    <th class="px-4 py-3 text-right">מחיר</th>
+                                    <th class="px-4 py-3 text-right">נשלח</th>
+                                    <th class="px-4 py-3 text-right">הוחזר</th>
+                                    <th class="px-4 py-3 text-right">סופי</th>
                                     <th class="px-4 py-3 text-right">סה"כ</th>
-                                    <th class="px-4 py-3 text-right">הערות</th>
+                                    <th class="px-4 py-3 text-center">פעולות</th>
                                 </tr>
                             </thead>
                             <tbody id="salesTableBody">
-                                <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">טוען...</td></tr>
+                                <tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">טוען...</td></tr>
                             </tbody>
                             <tfoot class="bg-gray-200 font-bold">
                                 <tr>
                                     <td colspan="3" class="px-4 py-3 text-right">סה"כ:</td>
+                                    <td class="px-4 py-3" id="salesTotalSent">0</td>
+                                    <td class="px-4 py-3 text-red-600" id="salesTotalReturned">0</td>
                                     <td class="px-4 py-3" id="salesTotalQty">0</td>
-                                    <td class="px-4 py-3"></td>
                                     <td class="px-4 py-3 text-green-600" id="salesTotalAmount">$0</td>
                                     <td></td>
                                 </tr>
@@ -494,31 +542,116 @@
             const tbody = document.getElementById('salesTableBody');
             
             if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">אין מכירות</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">אין מכירות</td></tr>';
+                document.getElementById('salesTotalSent').textContent = '0';
+                document.getElementById('salesTotalReturned').textContent = '0';
                 document.getElementById('salesTotalQty').textContent = '0';
                 document.getElementById('salesTotalAmount').textContent = '$0';
                 return;
             }
 
-            let totalQty = 0, totalAmount = 0;
+            let totalSent = 0, totalReturned = 0, totalFinal = 0, totalAmount = 0;
             tbody.innerHTML = data.map(s => {
-                totalQty += s.quantity_sold || 0;
-                totalAmount += s.total_amount || 0;
+                const sent = s.quantity_sold || 0;
+                const returned = s.quantity_returned || 0;
+                const final = sent - returned;
+                const amount = final * (s.price_per_unit || 0);
+                
+                totalSent += sent;
+                totalReturned += returned;
+                totalFinal += final;
+                totalAmount += amount;
+                
                 return `
                     <tr class="border-b hover:bg-gray-50">
                         <td class="px-4 py-3">${formatDate(s.sale_date)}</td>
                         <td class="px-4 py-3 font-bold">${s.agents?.name || ''}</td>
                         <td class="px-4 py-3">${s.customer_name || ''}</td>
-                        <td class="px-4 py-3">${(s.quantity_sold || 0).toLocaleString()}</td>
-                        <td class="px-4 py-3">$${formatNumber(s.price_per_unit)}</td>
-                        <td class="px-4 py-3 font-bold text-green-600">$${formatNumber(s.total_amount)}</td>
-                        <td class="px-4 py-3 text-gray-500">${s.notes || ''}</td>
+                        <td class="px-4 py-3">${sent.toLocaleString()}</td>
+                        <td class="px-4 py-3 ${returned > 0 ? 'text-red-600 font-bold' : ''}">${returned > 0 ? returned.toLocaleString() : '-'}</td>
+                        <td class="px-4 py-3 text-green-600 font-bold">${final.toLocaleString()}</td>
+                        <td class="px-4 py-3 font-bold text-green-600">$${formatNumber(amount)}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openEditSale('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-2">✏️</button>
+                            <button onclick="deleteSale('${s.id}')" class="text-red-500 hover:text-red-700">🗑️</button>
+                        </td>
                     </tr>
                 `;
             }).join('');
 
-            document.getElementById('salesTotalQty').textContent = totalQty.toLocaleString();
+            document.getElementById('salesTotalSent').textContent = totalSent.toLocaleString();
+            document.getElementById('salesTotalReturned').textContent = totalReturned.toLocaleString();
+            document.getElementById('salesTotalQty').textContent = totalFinal.toLocaleString();
             document.getElementById('salesTotalAmount').textContent = '$' + formatNumber(totalAmount);
+        }
+        
+        // פתיחת טופס עריכת מכירה
+        async function openEditSale(saleId) {
+            const { data } = await supabaseClient.from('agent_sales').select('*').eq('id', saleId).single();
+            if (!data) return;
+            
+            document.getElementById('editSaleId').value = saleId;
+            document.getElementById('editSaleDate').value = data.sale_date || '';
+            document.getElementById('editCustomerName').value = data.customer_name || '';
+            document.getElementById('editSaleQty').value = data.quantity_sold || '';
+            document.getElementById('editSalePrice').value = data.price_per_unit || '';
+            document.getElementById('editReturnedQty').value = data.quantity_returned || '';
+            document.getElementById('editSaleNotes').value = data.notes || '';
+            
+            calcEditSaleTotal();
+            document.getElementById('editSaleForm').classList.remove('hidden');
+        }
+        
+        function hideEditSaleForm() {
+            document.getElementById('editSaleForm').classList.add('hidden');
+        }
+        
+        function calcEditSaleTotal() {
+            const qty = parseFloat(document.getElementById('editSaleQty').value) || 0;
+            const returned = parseFloat(document.getElementById('editReturnedQty').value) || 0;
+            const price = parseFloat(document.getElementById('editSalePrice').value) || 0;
+            const final = qty - returned;
+            document.getElementById('editFinalQty').value = final;
+            document.getElementById('editSaleTotal').value = '$' + formatNumber(final * price);
+        }
+        
+        async function updateSale() {
+            const saleId = document.getElementById('editSaleId').value;
+            const qty = parseFloat(document.getElementById('editSaleQty').value) || 0;
+            const returned = parseFloat(document.getElementById('editReturnedQty').value) || 0;
+            const price = parseFloat(document.getElementById('editSalePrice').value) || 0;
+            const final = qty - returned;
+            
+            if (returned > qty) {
+                showToast('כמות שהוחזרה לא יכולה להיות גדולה מהכמות שנשלחה', 'error');
+                return;
+            }
+            
+            const { error } = await supabaseClient.from('agent_sales').update({
+                sale_date: document.getElementById('editSaleDate').value,
+                customer_name: document.getElementById('editCustomerName').value,
+                quantity_sold: qty,
+                quantity_returned: returned,
+                price_per_unit: price,
+                total_amount: final * price,
+                notes: document.getElementById('editSaleNotes').value
+            }).eq('id', saleId);
+            
+            if (error) {
+                showToast('שגיאה בעדכון', 'error');
+                return;
+            }
+            
+            showToast('המכירה עודכנה!');
+            hideEditSaleForm();
+            loadAllData();
+        }
+        
+        async function deleteSale(saleId) {
+            if (!confirm('למחוק את המכירה?')) return;
+            await supabaseClient.from('agent_sales').delete().eq('id', saleId);
+            showToast('המכירה נמחקה');
+            loadAllData();
         }
 
         // ===== סטטוס =====
@@ -530,18 +663,25 @@
             }
 
             const { data: inv } = await supabaseClient.from('agent_inventory').select('agent_id, quantity_received, total_expected');
-            const { data: sales } = await supabaseClient.from('agent_sales').select('agent_id, quantity_sold');
+            const { data: sales } = await supabaseClient.from('agent_sales').select('agent_id, quantity_sold, quantity_returned');
 
             let totalInvAtAgents = 0, totalSold = 0, totalOwed = 0;
 
             const rows = agents.map(a => {
-                let received = 0, owed = 0, sold = 0;
+                let received = 0, owed = 0, sold = 0, returned = 0;
                 if (inv) inv.filter(i => i.agent_id === a.id).forEach(i => { received += i.quantity_received || 0; owed += i.total_expected || 0; });
-                if (sales) sales.filter(s => s.agent_id === a.id).forEach(s => { sold += s.quantity_sold || 0; });
-                const remaining = received - sold;
+                if (sales) sales.filter(s => s.agent_id === a.id).forEach(s => { 
+                    sold += s.quantity_sold || 0; 
+                    returned += s.quantity_returned || 0;
+                });
+                
+                // מלאי נותר = קיבל - נשלח + הוחזר (מה שהוחזר חזר למלאי)
+                const remaining = received - sold + returned;
+                // נמכר בפועל = נשלח - הוחזר
+                const actualSold = sold - returned;
                 
                 totalInvAtAgents += remaining;
-                totalSold += sold;
+                totalSold += actualSold;
                 totalOwed += owed;
 
                 const statusClass = remaining === 0 ? 'text-green-600' : remaining < received * 0.2 ? 'text-yellow-600' : 'text-blue-600';
@@ -550,7 +690,7 @@
                 return `<tr class="border-b hover:bg-gray-50">
                     <td class="px-4 py-3 font-bold">${a.name}</td>
                     <td class="px-4 py-3">${received.toLocaleString()} גרם</td>
-                    <td class="px-4 py-3 text-green-600">${sold.toLocaleString()} גרם</td>
+                    <td class="px-4 py-3 text-green-600">${actualSold.toLocaleString()} גרם</td>
                     <td class="px-4 py-3 font-bold text-blue-600">${remaining.toLocaleString()} גרם</td>
                     <td class="px-4 py-3 font-bold text-red-600">$${formatNumber(owed)}</td>
                     <td class="px-4 py-3 ${statusClass}">${statusText}</td>
