@@ -141,7 +141,7 @@
                     </div>
                 </div>
 
-                <!-- סיכום יתרות - חצי רוחב במרכז -->
+                <!-- סיכום מכירות -->
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">סיכום מכירות</h3>
                     <div class="grid grid-cols-3 gap-3">
@@ -156,6 +156,30 @@
                         <div class="bg-green-50 rounded-lg p-3 text-center">
                             <p class="text-green-600 text-xs">💰 סיכום מכירות</p>
                             <p id="totalSales" class="text-xl font-bold text-green-800">$0</p>
+                        </div>
+                    </div>
+                    
+                    <!-- שורת מלאי -->
+                    <div class="grid grid-cols-4 gap-3 mt-4 pt-4 border-t">
+                        <div class="bg-cyan-50 rounded-lg p-3 text-center">
+                            <p class="text-cyan-600 text-xs">📦 מלאי משרד שנמכר</p>
+                            <p id="officeSoldQty" class="text-lg font-bold text-cyan-800">0</p>
+                            <p class="text-xs text-gray-400">גרם</p>
+                        </div>
+                        <div class="bg-orange-50 rounded-lg p-3 text-center">
+                            <p class="text-orange-600 text-xs">📤 נמכר לסוכנים</p>
+                            <p id="soldToAgentsQty" class="text-lg font-bold text-orange-800">0</p>
+                            <p class="text-xs text-gray-400">גרם</p>
+                        </div>
+                        <div class="bg-pink-50 rounded-lg p-3 text-center">
+                            <p class="text-pink-600 text-xs">🤝 סוכנים מכרו</p>
+                            <p id="agentsSoldQty" class="text-lg font-bold text-pink-800">0</p>
+                            <p class="text-xs text-gray-400">גרם</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                            <p class="text-yellow-600 text-xs">🏪 יתרה במלאי</p>
+                            <p id="remainingStock" class="text-lg font-bold text-yellow-800">0</p>
+                            <p class="text-xs text-gray-400">גרם</p>
                         </div>
                     </div>
                 </div>
@@ -186,29 +210,32 @@
                 // שער דולר ברירת מחדל
                 let exchangeRate = 3.22;
 
-                const [suppliers, products, customers, orders, payments, agentSales] = await Promise.all([
+                const [suppliers, products, customers, orders, payments, agentSales, agentInventory, orderItems] = await Promise.all([
                     supabaseClient.from('suppliers').select('id', { count: 'exact' }),
-                    supabaseClient.from('products').select('id', { count: 'exact' }),
+                    supabaseClient.from('products').select('id, quantity'),
                     supabaseClient.from('customers').select('id', { count: 'exact' }),
                     supabaseClient.from('orders').select('*'),
                     supabaseClient.from('payments').select('*'),
-                    supabaseClient.from('agent_sales').select('total_amount')
+                    supabaseClient.from('agent_sales').select('total_amount, quantity_sold, quantity_returned'),
+                    supabaseClient.from('agent_inventory').select('quantity_received'),
+                    supabaseClient.from('order_items').select('quantity')
                 ]);
 
                 document.getElementById('suppliersCount').textContent = suppliers.count || 0;
-                document.getElementById('productsCount').textContent = products.count || 0;
+                document.getElementById('productsCount').textContent = products.data?.length || 0;
                 document.getElementById('customersCount').textContent = customers.count || 0;
                 
                 const openOrders = (orders.data || []).filter(o => o.status !== 'הושלם' && o.status !== 'בוטל');
                 document.getElementById('ordersCount').textContent = openOrders.length;
 
+                // === סיכום מכירות ===
+                
                 // מכירות משרד = תשלומים שהתקבלו (המרה לדולר)
                 let officeSalesUSD = 0;
                 (payments.data || []).forEach(p => {
                     if (p.currency === 'USD') {
                         officeSalesUSD += parseFloat(p.amount) || 0;
                     } else {
-                        // שקלים - המרה לדולר
                         officeSalesUSD += (parseFloat(p.amount) || 0) / exchangeRate;
                     }
                 });
@@ -219,13 +246,48 @@
                     agentsSalesUSD += parseFloat(s.total_amount) || 0;
                 });
                 
-                // סה"כ מכירות = משרד + סוכנים
+                // סה"כ מכירות
                 const totalSalesUSD = officeSalesUSD + agentsSalesUSD;
                 
-                // עדכון התצוגה
                 document.getElementById('officeSales').textContent = '$' + officeSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                 document.getElementById('agentsSales').textContent = '$' + agentsSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
                 document.getElementById('totalSales').textContent = '$' + totalSalesUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                
+                // === שורת מלאי ===
+                
+                // סה"כ מלאי שנרכש (מטבלת products)
+                let totalPurchased = 0;
+                (products.data || []).forEach(p => {
+                    totalPurchased += parseFloat(p.quantity) || 0;
+                });
+                
+                // מלאי משרד שנמכר (מטבלת order_items)
+                let officeSoldQty = 0;
+                (orderItems.data || []).forEach(item => {
+                    officeSoldQty += parseFloat(item.quantity) || 0;
+                });
+                
+                // מלאי שנמכר לסוכנים (מטבלת agent_inventory)
+                let soldToAgentsQty = 0;
+                (agentInventory.data || []).forEach(inv => {
+                    soldToAgentsQty += parseFloat(inv.quantity_received) || 0;
+                });
+                
+                // מלאי שהסוכנים מכרו ללקוחות (כמות סופית = נשלח - הוחזר)
+                let agentsSoldQty = 0;
+                (agentSales.data || []).forEach(s => {
+                    const sold = parseFloat(s.quantity_sold) || 0;
+                    const returned = parseFloat(s.quantity_returned) || 0;
+                    agentsSoldQty += (sold - returned);
+                });
+                
+                // יתרה במלאי = נרכש - נמכר למשרד - נמכר לסוכנים
+                const remainingStock = totalPurchased - officeSoldQty - soldToAgentsQty;
+                
+                document.getElementById('officeSoldQty').textContent = officeSoldQty.toLocaleString();
+                document.getElementById('soldToAgentsQty').textContent = soldToAgentsQty.toLocaleString();
+                document.getElementById('agentsSoldQty').textContent = agentsSoldQty.toLocaleString();
+                document.getElementById('remainingStock').textContent = remainingStock.toLocaleString();
                 
             } catch (error) {
                 console.error('שגיאה בטעינת נתונים:', error);
